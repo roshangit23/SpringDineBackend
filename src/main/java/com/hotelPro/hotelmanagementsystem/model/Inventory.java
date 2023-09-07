@@ -2,6 +2,7 @@ package com.hotelPro.hotelmanagementsystem.model;
 
 import com.hotelPro.hotelmanagementsystem.service.CompanyAssociatedEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -18,9 +19,12 @@ public class Inventory implements CompanyAssociatedEntity {
     @Column(name = "item_name",unique = true)
     private String itemName;
     @NotNull
-    @Positive
+    @Min(0)
     @Column(name = "quantity")
     private Integer quantity;
+    @Min(0)
+    @Column(name = "smart_quantity")
+    private Integer smartQuantity;
     @NotNull
     @Positive
     @Column(name = "price_per_unit")
@@ -77,6 +81,19 @@ public class Inventory implements CompanyAssociatedEntity {
         this.quantity = quantity;
     }
 
+    public Integer getSmartQuantity() {
+        return smartQuantity;
+    }
+
+    public void setSmartQuantity(Integer smartQuantity) {
+        this.smartQuantity = smartQuantity;
+    }
+    @PrePersist
+    public void setDefaultSmartQuantity() {
+        if (this.smartQuantity == null) {
+            this.smartQuantity = 0;
+        }
+    }
     public void setPricePerUnit(Double pricePerUnit) {
         this.pricePerUnit = pricePerUnit;
     }

@@ -7,8 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "food_items",
@@ -37,6 +36,16 @@ public class FoodItem implements CompanyAssociatedEntity {
 
     @OneToMany(mappedBy = "foodItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<FoodItemOrder> foodItemOrders = new HashSet<>();
+
+//    @ElementCollection
+//    @CollectionTable(name = "fooditem_inventory",
+//            joinColumns = @JoinColumn(name = "fooditem_id"))
+//    @MapKeyJoinColumn(name = "inventory_id")
+//    @Column(name = "required_quantity")
+//    private Map<Long, Integer> requiredInventoryItems;
+
+    @OneToMany(mappedBy = "foodItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FoodItemInventory> requiredInventoryItems = new ArrayList<>();
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private Company company;
@@ -106,6 +115,22 @@ public class FoodItem implements CompanyAssociatedEntity {
 
     public void setFoodItemOrders(Set<FoodItemOrder> foodItemOrders) {
         this.foodItemOrders = foodItemOrders;
+    }
+
+//    public Map<Long, Integer> getRequiredInventoryItems() {
+//        return requiredInventoryItems;
+//    }
+//
+//    public void setRequiredInventoryItems(Map<Long, Integer> requiredInventoryItems) {
+//        this.requiredInventoryItems = requiredInventoryItems;
+//    }
+
+    public List<FoodItemInventory> getRequiredInventoryItems() {
+        return requiredInventoryItems;
+    }
+
+    public void setRequiredInventoryItems(List<FoodItemInventory> requiredInventoryItems) {
+        this.requiredInventoryItems = requiredInventoryItems;
     }
 
     public Company getCompany() {

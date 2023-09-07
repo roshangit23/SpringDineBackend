@@ -1,6 +1,11 @@
 package com.hotelPro.hotelmanagementsystem.controller.DTO;
 
 import com.hotelPro.hotelmanagementsystem.model.FoodItem;
+import com.hotelPro.hotelmanagementsystem.model.FoodItemInventory;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class FoodItemResponseDTO {
     private Long id;
 
@@ -13,6 +18,8 @@ public class FoodItemResponseDTO {
     private String type;
     private String description;
 
+    private List<FoodItemInventoryDTO> requiredInventoryItems;
+
     // constructors, getters, setters...
     public FoodItemResponseDTO() {
     }
@@ -24,6 +31,9 @@ public class FoodItemResponseDTO {
         this.category = foodItem.getCategory();
         this.type = foodItem.getType();
         this.description = foodItem.getDescription();
+        this.requiredInventoryItems = foodItem.getRequiredInventoryItems().stream()
+                .map(FoodItemInventoryDTO::new)
+                .collect(Collectors.toList());
     }
 
     public Long getId() {
@@ -72,5 +82,40 @@ public class FoodItemResponseDTO {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public List<FoodItemInventoryDTO> getRequiredInventoryItems() {
+        return requiredInventoryItems;
+    }
+
+    public void setRequiredInventoryItems(List<FoodItemInventoryDTO> requiredInventoryItems) {
+        this.requiredInventoryItems = requiredInventoryItems;
+    }
+
+    // Inner DTO class to represent FoodItemInventory in the response
+    public static class FoodItemInventoryDTO {
+        private Long inventoryId;
+        private Integer requiredQuantity;
+
+        public FoodItemInventoryDTO(FoodItemInventory foodItemInventory) {
+            this.inventoryId = foodItemInventory.getInventory().getId();
+            this.requiredQuantity = foodItemInventory.getRequiredQuantity();
+        }
+
+        public Long getInventoryId() {
+            return inventoryId;
+        }
+
+        public void setInventoryId(Long inventoryId) {
+            this.inventoryId = inventoryId;
+        }
+
+        public Integer getRequiredQuantity() {
+            return requiredQuantity;
+        }
+
+        public void setRequiredQuantity(Integer requiredQuantity) {
+            this.requiredQuantity = requiredQuantity;
+        }
     }
 }

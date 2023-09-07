@@ -60,11 +60,14 @@ public class InventoryServiceImpl implements InventoryService {
         if (inventoryDetails.getItemName() != null && !inventoryDetails.getItemName().isEmpty()) {
             inventory.setItemName(inventoryDetails.getItemName());
         }
-        if (inventoryDetails.getQuantity() != null && inventoryDetails.getQuantity() > 0) { // assuming 0 is not a valid quantity
+        if (inventoryDetails.getQuantity() != null && inventoryDetails.getQuantity() >= 0) { // assuming 0 is not a valid quantity
             inventory.setQuantity(inventoryDetails.getQuantity());
         }
         if (inventoryDetails.getPricePerUnit() != null && inventoryDetails.getPricePerUnit() > 0.0) { // assuming 0.0 is not a valid price
             inventory.setPricePerUnit(inventoryDetails.getPricePerUnit());
+        }
+        if (inventoryDetails.getSmartQuantity() != null && inventoryDetails.getSmartQuantity() >= 0) { // assuming 0 is not a valid quantity
+            inventory.setSmartQuantity(inventoryDetails.getSmartQuantity());
         }
         Inventory updatedInventory = inventoryRepository.save(inventory);
         return updatedInventory;

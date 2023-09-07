@@ -16,10 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +28,9 @@ public class OrderServiceImpl implements OrderService {
     private FoodItemRepository foodItemRepository;
     @Autowired
     private FoodItemOrderRepository foodItemOrderRepository;
+
+    @Autowired
+    private InventoryRepository inventoryRepository;
 
     @Autowired
     private BillRepository billRepository;
@@ -444,6 +444,37 @@ public class OrderServiceImpl implements OrderService {
     } catch (IllegalArgumentException e) {
         throw new InvalidEnumValueException("status", "Invalid value for status");
     }
+
+        if (order.getStatus() == Order.Status.COMPLETED) {
+            for (FoodItemOrder foodItemOrder : order.getFoodItemOrders()) {
+                FoodItem foodItem = foodItemOrder.getFoodItem();
+                Integer quantity = foodItemOrder.getQuantity();
+                List<FoodItemInventory> foodItemInventories = foodItem.getRequiredInventoryItems();
+
+                if (foodItemInventories != null) {
+                    for (FoodItemInventory foodItemInventory : foodItemInventories) {
+                        Long inventoryId = foodItemInventory.getInventory().getId();
+                        Integer requiredQuantity = foodItemInventory.getRequiredQuantity()*quantity;
+
+                        // Validate the inventory item's ID
+                        Inventory inventory = inventoryRepository.findById(inventoryId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Inventory", "id", inventoryId));
+
+                        // Check if the inventory exists and if the smartQuantity is greater than 0
+                        if (inventory != null && inventory.getId() != null && inventoryRepository.existsById(inventory.getId()) && inventory.getSmartQuantity() > 0) {
+                            Integer newSmartQuantity = inventory.getSmartQuantity() - requiredQuantity;
+                            if (newSmartQuantity >= 0) {
+                                // Ensure smartQuantity doesn't go below 0
+                                inventory.setSmartQuantity(newSmartQuantity);
+                            }else{
+                                inventory.setSmartQuantity(0);
+                            }
+                            inventoryRepository.save(inventory); // Assuming you have an inventoryRepository
+                        }
+                    }
+                }
+            }
+        }
 
         return orderRepository.save(order);
     }

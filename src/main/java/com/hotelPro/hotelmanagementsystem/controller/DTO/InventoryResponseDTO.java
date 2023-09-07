@@ -8,6 +8,7 @@ public class InventoryResponseDTO {
     private String itemName;
     private int quantity;
     private double pricePerUnit;
+    private int smartQuantity;
 
     // Default constructor
     public InventoryResponseDTO() {
@@ -19,6 +20,7 @@ public class InventoryResponseDTO {
         this.itemName = inventory.getItemName();
         this.quantity = inventory.getQuantity();
         this.pricePerUnit = inventory.getPricePerUnit();
+        this.smartQuantity = inventory.getSmartQuantity();
     }
 
     // Getters and Setters
@@ -53,5 +55,13 @@ public class InventoryResponseDTO {
 
     public void setPricePerUnit(double pricePerUnit) {
         this.pricePerUnit = pricePerUnit;
+    }
+
+    public int getSmartQuantity() {
+        return smartQuantity;
+    }
+
+    public void setSmartQuantity(int smartQuantity) {
+        this.smartQuantity = smartQuantity;
     }
 }
