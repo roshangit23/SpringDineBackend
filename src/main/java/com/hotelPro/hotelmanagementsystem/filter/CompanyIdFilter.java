@@ -47,6 +47,10 @@ try {
         return;
     }
 
+    String authHeader = request.getHeader("Authorization");
+    String token = authHeader.substring(7); // Assuming "Bearer " prefix
+    List<String> roles = jwtTokenProvider.getClaimFromToken(token, "roles", List.class);
+
     String companyIdFromPath = null;
     // Check if the path is one of those that contain companyId
     boolean isPathWithCompanyId = pathsWithCompanyId.stream().anyMatch(path::startsWith);
@@ -57,62 +61,71 @@ try {
         Long pathCompanyId = Long.parseLong(pathParts[3]); // Assuming companyId is always the third part of the path
         companyIdFromPath = pathCompanyId.toString();
     }
-    String authHeader = request.getHeader("Authorization");
-//    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-//        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-//        response.setContentType("application/json");
-//        sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid Authorization header");
-//        return;
-//    }
-    String token = authHeader.substring(7); // Assuming "Bearer " prefix
-    Long tokenCompanyId = jwtTokenProvider.getClaimFromToken(token, "companyId", Long.class);
-
-    if (companyIdFromPath != null) {
-        if (!tokenCompanyId.toString().equals(companyIdFromPath)) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType("application/json");
-            sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Unauthorized access to company data");
-            return;
-        }
-    } else if (!isPathWithCompanyId && !excludedPaths.contains(path)) {
-        List<CompanyAssociatedEntity> entities = entityServiceResolver.resolveEntity(request);
-
-        // Check if the entities list is null or empty
-        if (entities == null || entities.isEmpty()) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.setContentType("application/json");
-            sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid request path or endpoint not configured");
-            return;
-        }
-
-        for (CompanyAssociatedEntity entity : entities) {
-            if (!tokenCompanyId.equals(entity.getCompany().getId())) {
+    if (roles.contains("ROLE_DASHBOARD_USER")) {
+        List<Integer> associatedCompanyIds = jwtTokenProvider.getClaimFromToken(token, "companyIds", List.class);
+        if (companyIdFromPath != null) {
+            if (!associatedCompanyIds.contains(Integer.parseInt(companyIdFromPath))) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.setContentType("application/json");
                 sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Unauthorized access to company data");
                 return;
             }
+        } else if (!isPathWithCompanyId && !excludedPaths.contains(path)) {
+            List<CompanyAssociatedEntity> entities = entityServiceResolver.resolveEntity(request);
+            // Check if the entities list is null or empty
+            if (entities == null || entities.isEmpty()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.setContentType("application/json");
+                sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid request path or endpoint not configured");
+                return;
+            }
+            for (CompanyAssociatedEntity entity : entities) {
+                if (!associatedCompanyIds.contains(entity.getCompany().getId().intValue())) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Unauthorized access to company data");
+                    return;
+                }
+            }
+        }
+    }else {
+        Long tokenCompanyId = jwtTokenProvider.getClaimFromToken(token, "companyId", Long.class);
+        if (companyIdFromPath != null) {
+            if (!tokenCompanyId.toString().equals(companyIdFromPath)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Unauthorized access to company data");
+                return;
+            }
+        } else if (!isPathWithCompanyId && !excludedPaths.contains(path)) {
+            List<CompanyAssociatedEntity> entities = entityServiceResolver.resolveEntity(request);
+
+            // Check if the entities list is null or empty
+            if (entities == null || entities.isEmpty()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.setContentType("application/json");
+                sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid request path or endpoint not configured");
+                return;
+            }
+
+            for (CompanyAssociatedEntity entity : entities) {
+                if (!tokenCompanyId.equals(entity.getCompany().getId())) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Unauthorized access to company data");
+                    return;
+                }
+            }
         }
     }
     filterChain.doFilter(request, response);
 }
-//catch (ResourceNotFoundException ex) {
-//    response.setStatus(HttpStatus.NOT_FOUND.value());
-//    response.setContentType("application/json");
-//
-//    CustomErrorResponse errorResponse = new CustomErrorResponse();
-//    errorResponse.setStatus(HttpStatus.NOT_FOUND.value());
-//    errorResponse.setError(ex.getMessage());
-//
-//    String jsonResponse = objectMapper.writeValueAsString(errorResponse);
-//    response.getWriter().write(jsonResponse);
-//    return;
-//}
 
 catch (NullPointerException e) {
     sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid token or missing companyId claim");
     return;
-} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+}
+catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
     sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid companyId in path");
     return;
 }  catch (ExpiredJwtException e) {

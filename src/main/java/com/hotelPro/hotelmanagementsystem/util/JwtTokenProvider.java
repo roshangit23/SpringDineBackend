@@ -1,6 +1,10 @@
 package com.hotelPro.hotelmanagementsystem.util;
 
 import com.hotelPro.hotelmanagementsystem.exception.CustomException;
+import com.hotelPro.hotelmanagementsystem.model.Company;
+import com.hotelPro.hotelmanagementsystem.model.User;
+import com.hotelPro.hotelmanagementsystem.repository.UserRepository;
+import com.hotelPro.hotelmanagementsystem.service.CustomUserDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -14,9 +18,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.GrantedAuthority;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class JwtTokenProvider {
@@ -28,9 +35,16 @@ public class JwtTokenProvider {
 
     @Autowired
     private UserDetailsService userDetailsService;
+
+    @Autowired
+    private CustomUserDetails customUserDetails;
+    @Autowired
+    private UserRepository userRepository;
     public String createToken(String username, Long companyId) {
         Claims claims = Jwts.claims().setSubject(username);
         claims.put("companyId", companyId);
+        List<String> roles = getRolesByUsername(username);  // Fetch roles based on username
+        claims.put("roles", roles);  // Add roles to the token
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
@@ -79,18 +93,37 @@ public class JwtTokenProvider {
         if (username == null || username.trim().isEmpty()) {
             throw new CustomException("Username cannot be null or empty", HttpStatus.BAD_REQUEST);
         }
-        try {
-            return Jwts.builder()
-                    .setSubject(username)
-                    .setIssuedAt(new Date())
-                    .setExpiration(new Date((new Date()).getTime() + validityInMilliseconds))
-                    .signWith(SignatureAlgorithm.HS256, secretKey)
-                    .compact();
-        }catch (Exception e) {
-            // You can log the exception here if you have a logging framework set up
-            throw new CustomException("Error generating JWT token", HttpStatus.INTERNAL_SERVER_ERROR);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+
+        Claims claims = Jwts.claims().setSubject(username);
+        List<String> roles = getRolesByUsername(username);  // Fetch roles based on username
+        claims.put("roles", roles);  // Add roles to the token
+
+        // Check if the user is a dashboard user
+        if (roles.contains("DASHBOARD_USER")) {
+            // Fetch the companyIds for the dashboard user
+            List<Long> companyIds = customUserDetails.getCompanies().stream()
+                    .map(Company::getId)
+                    .collect(Collectors.toList());
+            claims.put("companyIds", companyIds);
+        } else {
+            // Fetch the companyId for the user
+            Long companyId = user.getCompany().getId(); // You'll need to implement logic to fetch companyId for the user
+            claims.put("companyId", companyId);
         }
+
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + validityInMilliseconds);
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .compact();
     }
+
     private Claims getAllClaimsFromToken(String token) {
         try{
         return Jwts.parser()
@@ -111,6 +144,31 @@ public class JwtTokenProvider {
             throw new CustomException("Invalid JWT token", HttpStatus.BAD_REQUEST);
         }
     }
+
+    private List<String> getRolesByUsername(String username) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        return userDetails.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+    }
+
+    public String createDashboardToken(String username, List<Long> companyIds) {
+        Claims claims = Jwts.claims().setSubject(username);
+        claims.put("companyIds", companyIds);
+        List<String> roles = getRolesByUsername(username);  // Fetch roles based on username
+        claims.put("roles", roles);  // Add roles to the token
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + validityInMilliseconds);
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .compact();
+    }
+
 
 }
 

@@ -1,5 +1,6 @@
 package com.hotelPro.hotelmanagementsystem.service.impl;
 
+import com.hotelPro.hotelmanagementsystem.exception.CustomException;
 import com.hotelPro.hotelmanagementsystem.exception.ResourceNotFoundException;
 import com.hotelPro.hotelmanagementsystem.model.Company;
 import com.hotelPro.hotelmanagementsystem.model.FoodItem;
@@ -11,6 +12,7 @@ import com.hotelPro.hotelmanagementsystem.repository.InventoryRepository;
 import com.hotelPro.hotelmanagementsystem.service.FoodItemService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -43,7 +45,10 @@ public class FoodItemServiceImpl implements FoodItemService {
                 // Validate the inventory item's ID
                 Inventory validatedInventory = inventoryRepository.findById(inventoryId)
                         .orElseThrow(() -> new ResourceNotFoundException("Inventory", "id", inventoryId));
-
+                // Check if the inventory's associated companyId matches the passed companyId
+                if (!validatedInventory.getCompany().getId().equals(companyId)) {
+                    throw new CustomException("Unauthorized access to company data", HttpStatus.FORBIDDEN);
+                }
                 // Set the validated inventory to the foodItemInventory
                 foodItemInventory.setInventory(validatedInventory);
                 foodItemInventory.setRequiredQuantity(requiredQuantity); // This might be redundant if it's already set, but just to be sure

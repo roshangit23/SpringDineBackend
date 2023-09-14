@@ -19,9 +19,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.GrantedAuthority;
 
 import java.util.HashSet;
 import java.util.List;
@@ -53,7 +54,7 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private RefreshTokenService refreshTokenService;
 
-    private static final Set<User.Role> RESTRICTED_ROLES = Set.of(User.Role.ROLE_ADMIN);
+    private static final Set<User.Role> RESTRICTED_ROLES = Set.of(User.Role.ROLE_ADMIN,User.Role.ROLE_DASHBOARD_USER);
     @Override
     public JwtResponse login(AuthenticationRequest authenticationRequest) throws Exception {
         try {
@@ -65,6 +66,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         final CustomUserDetails customUserDetails = (CustomUserDetails) myUserDetailsService.loadUserByUsername(authenticationRequest.getUsername());
+        if (customUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DASHBOARD_USER"))){
+            throw new CustomException("Cannot login using Dashboard's username", HttpStatus.BAD_REQUEST);
+        }
         final String jwt = jwtTokenUtil.createToken(authenticationRequest.getUsername(), customUserDetails.getCompany().getId());
 
         // Delete any existing refresh token for the user
@@ -100,7 +104,8 @@ public class AuthServiceImpl implements AuthService {
             Set<User.Role> userRoles = userRequestDTO.getRoles().stream()
                     .map(roleStr -> User.Role.valueOf(roleStr.trim().toUpperCase()))
                     .collect(Collectors.toSet());
-            if (userRoles.stream().anyMatch(role -> RESTRICTED_ROLES.contains(role))) {
+            //if (userRoles.stream().anyMatch(role -> RESTRICTED_ROLES.contains(role))) {
+            if (userRoles.stream().anyMatch(RESTRICTED_ROLES::contains)) {
                 throw new CustomException("Invalid role provided", HttpStatus.BAD_REQUEST);
             }
             newUser.setRoles(userRoles);
@@ -157,8 +162,13 @@ public class AuthServiceImpl implements AuthService {
         if (!existingUser.getCompany().getId().equals(tokenCompanyId)) {
             throw new CustomException("Unauthorized access to company data", HttpStatus.FORBIDDEN);
         }
-
-        userRepository.deleteById(userId);
+       final CustomUserDetails customUserDetails = (CustomUserDetails) myUserDetailsService.loadUserByUsername(existingUser.getUsername());
+        // Check if the user is a dashboard user or admin user
+        if (customUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DASHBOARD_USER"))
+        || customUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))){
+            throw new CustomException("Admin user or dashboard user cannot be deleted", HttpStatus.FORBIDDEN);
+        }
+            userRepository.deleteById(userId);
         return "User deleted successfully!";
     }
     @Override
@@ -176,6 +186,10 @@ public class AuthServiceImpl implements AuthService {
             Set<User.Role> userRoles = roles.stream()
             .map(roleStr -> User.Role.valueOf(roleStr.trim().toUpperCase()))
             .collect(Collectors.toSet());
+           //if (userRoles.stream().anyMatch(role -> RESTRICTED_ROLES.contains(role))) {
+          if (userRoles.stream().anyMatch(RESTRICTED_ROLES::contains)) {
+               throw new CustomException("Invalid role provided", HttpStatus.BAD_REQUEST);
+           }
              user.setRoles(userRoles);
           }
       catch (IllegalArgumentException e) {
@@ -240,5 +254,112 @@ public class AuthServiceImpl implements AuthService {
                 user.getRoles().stream().map(User.Role::name).collect(Collectors.toSet())
         )).collect(Collectors.toList());
     }
+
+    //dashboard
+    @Override
+    public String registerDashboardUser(DashboardUserRequestDTO dashboardUserRequestDTO)  {
+        if (userRepository.findByUsername(dashboardUserRequestDTO.getUsername()).isPresent()) {
+            throw new CustomException("Username already exists", HttpStatus.BAD_REQUEST);
+        }
+
+        User newUser = new User();
+        newUser.setUsername(dashboardUserRequestDTO.getUsername());
+        newUser.setPassword(passwordEncoder.encode(dashboardUserRequestDTO.getPassword()));
+        newUser.setEmail(dashboardUserRequestDTO.getEmail());
+        newUser.setMobileNumber(dashboardUserRequestDTO.getMobileNumber());
+       // Fetch the companies and associate them with the user
+        Set<Company> associatedCompanies = new HashSet<>(companyRepository.findAllById(dashboardUserRequestDTO.getCompanyIds()));
+        if (associatedCompanies.size() != dashboardUserRequestDTO.getCompanyIds().size()) {
+            throw new CustomException("Some companies not found", HttpStatus.BAD_REQUEST);
+        }
+        newUser.setCompanies(associatedCompanies);
+        // Set the user role as DASHBOARD_USER
+        Set<User.Role> roles = new HashSet<>();
+        roles.add(User.Role.ROLE_DASHBOARD_USER);
+        newUser.setRoles(roles);
+
+        userRepository.save(newUser);
+
+        return "Dashboard user registered successfully!";
+    }
+
+    @Override
+    public String addCompanyToDashboardUser(Long userId, Long companyId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new CustomException("Company not found", HttpStatus.NOT_FOUND));
+        String username = user.getUsername();
+        final CustomUserDetails customUserDetails = (CustomUserDetails) myUserDetailsService.loadUserByUsername(username);
+        if (!customUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DASHBOARD_USER"))){
+            throw new CustomException("User is not a dashboard user", HttpStatus.BAD_REQUEST);
+        }
+        // Check if the user is already associated with the company
+        if (user.getCompanies().contains(company)) {
+            return "User is already associated with this company.";
+        }
+
+        user.getCompanies().add(company);
+        userRepository.save(user);
+
+        return "Company added to dashboard user successfully!";
+    }
+
+    @Override
+    public String removeCompanyFromDashboardUser(Long userId, Long companyId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new CustomException("Company not found", HttpStatus.NOT_FOUND));
+        String username = user.getUsername();
+        final CustomUserDetails customUserDetails = (CustomUserDetails) myUserDetailsService.loadUserByUsername(username);
+        if (!customUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DASHBOARD_USER"))){
+           throw new CustomException("User is not a dashboard user", HttpStatus.BAD_REQUEST);
+       }
+        if (!user.getCompanies().contains(company)) {
+            throw new CustomException("Company not associated with the user", HttpStatus.BAD_REQUEST);
+        }
+
+        user.getCompanies().remove(company);
+        userRepository.save(user);
+
+        return "Company removed from dashboard user successfully!";
+    }
+
+    @Override
+    public JwtResponse dashboardLogin(AuthenticationRequest authenticationRequest) throws Exception {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            throw new CustomException("Incorrect username or password", HttpStatus.BAD_REQUEST);
+        }
+
+        final CustomUserDetails customUserDetails = (CustomUserDetails) myUserDetailsService.loadUserByUsername(authenticationRequest.getUsername());
+
+        // Check if the user is a dashboard user
+        if (customUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DASHBOARD_USER"))) {
+            List<Long> companyIds = customUserDetails.getCompanies().stream()
+                    .map(Company::getId)
+                    .collect(Collectors.toList());
+            System.out.println("List Of CompanyIds: "+companyIds.toString());
+            final String jwt = jwtTokenUtil.createDashboardToken(customUserDetails.getUsername(),companyIds);
+
+            //Delete any existing refresh token for the user
+            refreshTokenService.deleteByUserId(customUserDetails.getId());
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(customUserDetails.getId());
+            List<String> roles = customUserDetails.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toList());
+
+            return new JwtResponse(jwt, refreshToken.getToken(), customUserDetails.getId(), customUserDetails.getUsername(), customUserDetails.getEmail(), customUserDetails.getMobileNumber(), roles, null); // No single company name for dashboard users
+        } else {
+            // Existing logic for regular users
+           // return this.login(authenticationRequest);
+            throw new CustomException("Please login using dashboard's username", HttpStatus.BAD_REQUEST);
+        }
+    }
+
 }
 

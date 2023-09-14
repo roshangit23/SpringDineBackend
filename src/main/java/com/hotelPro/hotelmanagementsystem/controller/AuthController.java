@@ -69,4 +69,24 @@ public class AuthController {
         authService.logout(refreshToken);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Logged out successfully"));
     }
+
+    //dashboard
+    @PostMapping("/register-dashboard-user")
+    public ResponseEntity<ApiResponse<?>> registerDashboardUser(@Valid @RequestBody DashboardUserRequestDTO dashboardUserRequestDTO) throws Exception {
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), authService.registerDashboardUser(dashboardUserRequestDTO)));
+    }
+
+    @PostMapping("/dashboard-user/add-company/{userId}")
+    public ResponseEntity<ApiResponse<?>> addCompanyToDashboardUser(@PathVariable Long userId, @Valid @RequestBody AddRemoveCompanyDTO addRemoveCompanyDTO) throws Exception {
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), authService.addCompanyToDashboardUser(userId, addRemoveCompanyDTO.getCompanyId())));
+    }
+    @PostMapping("/dashboard-user/remove-company/{userId}")
+    public ResponseEntity<ApiResponse<?>> removeCompanyFromDashboardUser(@PathVariable Long userId, @Valid @RequestBody AddRemoveCompanyDTO addRemoveCompanyDTO) throws Exception {
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), authService.removeCompanyFromDashboardUser(userId, addRemoveCompanyDTO.getCompanyId())));
+    }
+    @PostMapping("/dashboard/login")
+    public ResponseEntity<ApiResponse<?>> createDashboardAuthenticationToken(@Valid @RequestBody AuthenticationRequest authenticationRequest) throws Exception {
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), authService.dashboardLogin(authenticationRequest)));
+    }
+
 }

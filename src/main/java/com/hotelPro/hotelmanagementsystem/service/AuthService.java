@@ -23,4 +23,12 @@ public interface AuthService {
     String registerCompany(CompanyRequestDTO companyDTO);
 
     List<UserResponseDTO> getUsersByCompany(Long companyId, String token);
+
+    String registerDashboardUser(DashboardUserRequestDTO dashboardUserRequestDTO);
+
+    String addCompanyToDashboardUser(Long userId, Long companyId);
+
+    String removeCompanyFromDashboardUser(Long userId, Long companyId);
+
+    JwtResponse dashboardLogin(AuthenticationRequest authenticationRequest) throws Exception;
 }
