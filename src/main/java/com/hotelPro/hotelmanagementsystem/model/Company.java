@@ -2,7 +2,9 @@ package com.hotelPro.hotelmanagementsystem.model;
 
 import jakarta.persistence.*;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "companies")
@@ -42,6 +44,10 @@ public class Company {
 
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL)
     private List<User> users;
+
+    // New many-to-many relationship
+    @ManyToMany(mappedBy = "companies")
+    private Set<User> dashboardUsers = new HashSet<>();
 
     // Constructors, Getters, Setters, etc.
     public Company(){
@@ -143,5 +149,24 @@ public class Company {
     public void setUsers(List<User> users) {
         this.users = users;
     }
+
+    public Set<User> getDashboardUsers() {
+        return dashboardUsers;
+    }
+
+    public void setDashboardUsers(Set<User> dashboardUsers) {
+        this.dashboardUsers = dashboardUsers;
+    }
+    public void addDashboardUser(User user) {
+        this.dashboardUsers.add(user);
+        user.getCompanies().add(this);
+    }
+
+    public void removeDashboardUser(User user) {
+        this.dashboardUsers.remove(user);
+        user.getCompanies().remove(this);
+    }
+
+
 }
 

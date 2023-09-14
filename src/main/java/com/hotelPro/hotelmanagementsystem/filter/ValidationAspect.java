@@ -22,6 +22,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.Collections;
+import java.util.List;
+
 @Aspect
 @Component
 public class ValidationAspect {
@@ -42,14 +45,13 @@ public class ValidationAspect {
 
     @Before("@annotation(com.hotelPro.hotelmanagementsystem.filter.ValidateOrderRequest) && args(orderRequest,..)")
     public void validateOrder(JoinPoint joinPoint, OrderRequestDTO orderRequest) {
-        //Extract companyId from the token
-        Long companyIdFromToken = getCompanyIdFromToken();
-
+        // Extract companyIds based on user role
+        List<Long> companyIdsForUser = getCompanyIdsForUser();
         if (orderRequest.getFoodItemOrders() != null || !orderRequest.getFoodItemOrders().isEmpty()) {
             for (FoodItemOrderDTO foodItemOrderDTO : orderRequest.getFoodItemOrders()) {
                 if (foodItemOrderDTO != null && foodItemOrderDTO.getFoodItemId() != null) {
                     FoodItem foodItem = foodItemService.getFoodItemById(foodItemOrderDTO.getFoodItemId());
-                    if (foodItem != null && !foodItem.getCompany().getId().equals(companyIdFromToken)) {
+                    if (foodItem != null && !companyIdsForUser.contains(foodItem.getCompany().getId())) {
                         throw new CustomException("Unauthorized access to company data", HttpStatus.FORBIDDEN);
                     }
                 }
@@ -58,14 +60,14 @@ public class ValidationAspect {
 
         if (orderRequest.getCustomerId() != null) {
             Customer customer = customerService.getCustomer(orderRequest.getCustomerId());
-            if (customer != null && !customer.getCompany().getId().equals(companyIdFromToken)) {
+            if (customer != null &&   !companyIdsForUser.contains(customer.getCompany().getId())) {
                 throw new CustomException("Unauthorized access to company data", HttpStatus.FORBIDDEN);
             }
         }
 
          if (orderRequest.getEmployeeId() != null) {
             Employee employee = employeeService.getEmployeeById(orderRequest.getEmployeeId());
-            if (employee != null && !employee.getCompany().getId().equals(companyIdFromToken)) {
+            if (employee != null && !companyIdsForUser.contains(employee.getCompany().getId())) {
                 throw new CustomException("Unauthorized access to company data", HttpStatus.FORBIDDEN);
             }
         }
@@ -74,13 +76,14 @@ public class ValidationAspect {
 
     @Before("@annotation(com.hotelPro.hotelmanagementsystem.filter.ValidateMergeOrdersRequest) && args(mergeOrdersRequest,..)")
     public void validateMergeOrders(JoinPoint joinPoint, MergeOrdersRequestDTO mergeOrdersRequest) {
-        Long companyIdFromToken = getCompanyIdFromToken();
+        // Extract companyIds based on user role
+        List<Long> companyIdsForUser = getCompanyIdsForUser();
         if (mergeOrdersRequest.getTableIds() == null || mergeOrdersRequest.getTableIds().isEmpty()) {
             throw new CustomException("Table IDs list is empty or null", HttpStatus.BAD_REQUEST);
         }
         for (Long tableId : mergeOrdersRequest.getTableIds()) {
             RestaurantTable restaurantTable = restaurantTableService.getTableById(tableId);
-            if (restaurantTable != null && !restaurantTable.getCompany().getId().equals(companyIdFromToken)) {
+            if (restaurantTable != null && !companyIdsForUser.contains(restaurantTable.getCompany().getId())) {
                 throw new CustomException("Unauthorized access to company data", HttpStatus.FORBIDDEN);
             }
         }
@@ -96,5 +99,20 @@ public class ValidationAspect {
         Long companyId = jwtTokenProvider.getClaimFromToken(token, "companyId", Long.class);
 
         return companyId;
+    }
+
+    private List<Long> getCompanyIdsForUser() {
+        String token = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest().getHeader("Authorization");
+        if (token == null || !token.startsWith("Bearer ")) {
+            throw new CustomException("Missing or invalid Authorization header", HttpStatus.UNAUTHORIZED);
+        }
+        token = token.substring(7); // strip off "Bearer "
+
+        List<String> roles = jwtTokenProvider.getClaimFromToken(token, "roles", List.class);
+        if (roles.contains("ROLE_DASHBOARD_USER")) {
+            return jwtTokenProvider.getClaimFromToken(token, "companyIds", List.class);
+        } else {
+            return Collections.singletonList(getCompanyIdFromToken());
+        }
     }
 }

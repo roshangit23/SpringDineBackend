@@ -4,6 +4,7 @@ import com.hotelPro.hotelmanagementsystem.service.CompanyAssociatedEntity;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -39,6 +40,14 @@ public class User implements CompanyAssociatedEntity {
     @JoinColumn(name = "company_id")
     private Company company;
 
+    // New many-to-many relationship
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_companies",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "company_id")
+    )
+    private Set<Company> companies = new HashSet<>();
     @OneToOne(mappedBy = "user", cascade = CascadeType.REMOVE)
     private RefreshToken refreshToken;
     // Default constructor
@@ -112,11 +121,19 @@ public class User implements CompanyAssociatedEntity {
         this.company = company;
     }
 
+    public Set<Company> getCompanies() {
+        return companies;
+    }
+
+    public void setCompanies(Set<Company> companies) {
+        this.companies = companies;
+    }
+
     public enum Role implements GrantedAuthority {
        ROLE_ADMIN,
        ROLE_MANAGER,
        ROLE_CAPTAIN,
-       ROLE_KITCHEN;
+       ROLE_KITCHEN, ROLE_DASHBOARD_USER;
         @Override
         public String getAuthority() {
             return name();
