@@ -1,8 +1,9 @@
 package com.hotelPro.hotelmanagementsystem.controller;
 
-import com.hotelPro.hotelmanagementsystem.controller.DTO.OrderRequestDTO;
-import com.hotelPro.hotelmanagementsystem.controller.DTO.OrderResponseDTO;
+import com.hotelPro.hotelmanagementsystem.controller.DTO.*;
 import com.hotelPro.hotelmanagementsystem.filter.ValidateOrderRequest;
+import com.hotelPro.hotelmanagementsystem.model.FoodItemOrder;
+import com.hotelPro.hotelmanagementsystem.model.FoodItemOrderDetail;
 import com.hotelPro.hotelmanagementsystem.model.Order;
 import com.hotelPro.hotelmanagementsystem.service.OrderService;
 import jakarta.validation.Valid;
@@ -15,6 +16,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -137,6 +139,91 @@ public class OrderController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), orderDTOs));
     }
+
+    //FoodItemOrder APIs
+    @GetMapping("/getAllFoodItemOrders/{companyId}")
+    public ResponseEntity<ApiResponse<Set<FoodItemOrderResponseDTO>>> getAllFoodItemOrders(@PathVariable Long companyId) {
+        Set<FoodItemOrder> foodItemOrders = orderService.getAllFoodItemOrdersByCompanyId(companyId);
+        Set<FoodItemOrderResponseDTO> responseDTOs = foodItemOrders.stream()
+                .map(FoodItemOrderResponseDTO::new)
+                .collect(Collectors.toSet());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTOs));
+    }
+
+    @GetMapping("/foodItemOrders/{orderId}")
+    public ResponseEntity<ApiResponse<Set<FoodItemOrderResponseDTO>>> getAllFoodItemOrdersByOrderId(@PathVariable Long orderId) {
+        Set<FoodItemOrder> foodItemOrders = orderService.getAllFoodItemOrdersByOrderId(orderId);
+        Set<FoodItemOrderResponseDTO> responseDTOs = foodItemOrders.stream()
+                .map(FoodItemOrderResponseDTO::new)
+                .collect(Collectors.toSet());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTOs));
+    }
+
+    @GetMapping("/foodItemOrdersByStatus/{companyId}/{status}")
+    public ResponseEntity<ApiResponse<Set<FoodItemOrderResponseDTO>>> getFoodItemOrdersByStatus(@PathVariable Long companyId, @PathVariable FoodItemOrder.Status status) {
+        Set<FoodItemOrder> foodItemOrders = orderService.getFoodItemOrdersByStatusAndCompanyId(companyId, status);
+        Set<FoodItemOrderResponseDTO> responseDTOs = foodItemOrders.stream()
+                .map(FoodItemOrderResponseDTO::new)
+                .collect(Collectors.toSet());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTOs));
+    }
+
+    @PutMapping("/foodItemOrder/status/{orderId}/{foodItemId}/{foodItemOrderDetailId}")
+    public ResponseEntity<ApiResponse<CombinedFoodItemOrderResponseDTO>> updateFoodItemOrderStatus(
+            @PathVariable Long orderId,
+            @PathVariable Long foodItemId,
+            @PathVariable Long foodItemOrderDetailId,
+            @Valid @RequestBody FoodItemOrderStatusUpdateDTO statusUpdateDTO) {
+        FoodItemOrder updatedFoodItemOrder = orderService.updateFoodItemOrderStatus(orderId, foodItemId, foodItemOrderDetailId, statusUpdateDTO.getStatus());
+        CombinedFoodItemOrderResponseDTO responseDTO = new CombinedFoodItemOrderResponseDTO(updatedFoodItemOrder);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTO));
+    }
+
+
+    @GetMapping("/foodItemOrder/duration/{orderId}/{foodItemId}")
+    public ResponseEntity<ApiResponse<DurationResponseDTO>> getTimeTakenForFoodItemOrder(@PathVariable Long orderId, @PathVariable Long foodItemId) {
+        Duration duration = orderService.getTimeTakenForFoodItemOrder(orderId, foodItemId);
+        long durationInMinutes = duration.toMinutes();
+        DurationResponseDTO responseDTO = new DurationResponseDTO("FoodItemOrder duration: " + durationInMinutes + " minutes", durationInMinutes);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTO));
+    }
+
+    //FoodItemOrderDetail APIs
+    @GetMapping("/getAllFoodItemOrderDetails/{companyId}")
+    public ResponseEntity<ApiResponse<Set<FoodItemOrderDetailResponseDTO>>> getAllFoodItemOrderDetailsByCompanyId(@PathVariable Long companyId) {
+        Set<FoodItemOrderDetail> foodItemOrderDetails = orderService.getAllFoodItemOrderDetailsByCompanyId(companyId);
+        Set<FoodItemOrderDetailResponseDTO> responseDTOs = foodItemOrderDetails.stream()
+                .map(FoodItemOrderDetailResponseDTO::new)
+                .collect(Collectors.toSet());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTOs));
+    }
+
+    @GetMapping("/foodItemOrderDetails/{orderId}")
+    public ResponseEntity<ApiResponse<Set<FoodItemOrderDetailResponseDTO>>> getAllFoodItemOrderDetailsByOrderId(@PathVariable Long orderId) {
+        Set<FoodItemOrderDetail> foodItemOrderDetails = orderService.getAllFoodItemOrderDetailsByOrderId(orderId);
+        Set<FoodItemOrderDetailResponseDTO> responseDTOs = foodItemOrderDetails.stream()
+                .map(FoodItemOrderDetailResponseDTO::new)
+                .collect(Collectors.toSet());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTOs));
+    }
+
+    @GetMapping("/foodItemOrderDetailsByStatus/{companyId}/{status}")
+    public ResponseEntity<ApiResponse<Set<FoodItemOrderDetailResponseDTO>>> getFoodItemOrderDetailsByStatusAndCompanyId(@PathVariable Long companyId, @PathVariable FoodItemOrder.Status status) {
+        Set<FoodItemOrderDetail> foodItemOrderDetails = orderService.getFoodItemOrderDetailsByStatusAndCompanyId(companyId, status);
+        Set<FoodItemOrderDetailResponseDTO> responseDTOs = foodItemOrderDetails.stream()
+                .map(FoodItemOrderDetailResponseDTO::new)
+                .collect(Collectors.toSet());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTOs));
+    }
+
+    @GetMapping("/foodItemOrderDetail/duration/{orderId}/{foodItemId}/{foodItemOrderDetailId}")
+    public ResponseEntity<ApiResponse<DurationResponseDTO>> getTimeTakenForFoodItemOrderDetail(@PathVariable Long orderId, @PathVariable Long foodItemId, @PathVariable Long foodItemOrderDetailId) {
+        Duration duration = orderService.getTimeTakenForFoodItemOrderDetail(orderId, foodItemId, foodItemOrderDetailId);
+        long durationInMinutes = duration.toMinutes();
+        DurationResponseDTO responseDTO = new DurationResponseDTO("FoodItemOrderDetail duration: " + durationInMinutes + " minutes", durationInMinutes);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTO));
+    }
+
 
 }
 

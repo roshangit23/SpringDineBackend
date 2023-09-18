@@ -106,9 +106,10 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
     @Transactional
     public RestaurantTable completeTable(Long tableId) {
         RestaurantTable table = getTableById(tableId);
-        if (table.getCurrentOrder() == null || table.getCurrentOrder().getStatus() != Order.Status.COMPLETED) {
-            throw new CustomException("Table can only be completed if the current order is marked as COMPLETE.", HttpStatus.BAD_REQUEST);
+        if((table.getCurrentOrder() == null) || (table.getCurrentOrder().getStatus() != Order.Status.COMPLETED && table.getCurrentOrder().getStatus() != Order.Status.REMOVED_WITHOUT_CREATING)) {
+            throw new CustomException("Table can only be completed if the current order is marked as COMPLETE or REMOVED_WITHOUT_CREATING.", HttpStatus.BAD_REQUEST);
         }
+
         table.setStatus(RestaurantTable.TableStatus.COMPLETED);
         return restaurantTableRepository.save(table);
     }
@@ -133,17 +134,22 @@ public RestaurantTable freeTable(Long tableId) {
     RestaurantTable table = getTableById(tableId);
     Order currentOrder = table.getCurrentOrder();
     Bill currentBill = billRepository.findFirstByRestaurantTableOrderByBillCreatedTimeDesc(table);
-
-    if (currentBill == null || currentBill.getStatus() != Bill.BillStatus.SETTLED && currentBill.getStatus() != Bill.BillStatus.NOT_SETTLED) {
-        throw new CustomException("The current bill must be SETTLED or NOT_SETTLED to free the table.", HttpStatus.BAD_REQUEST);
+    if(currentOrder != null){
+    if(currentOrder.getStatus() == Order.Status.MERGED || currentOrder.getStatus() == Order.Status.COMPLETED) {
+       if (currentBill == null || (currentBill.getStatus() != Bill.BillStatus.SETTLED && currentBill.getStatus() != Bill.BillStatus.NOT_SETTLED)) {
+           throw new CustomException("The current bill must be SETTLED or NOT_SETTLED to free the table.", HttpStatus.BAD_REQUEST);
+       }
+     }
     }
-
-    if (currentOrder == null || (currentOrder.getStatus() != Order.Status.MERGED && currentOrder.getStatus() != Order.Status.REMOVED_WITHOUT_CREATING
-            && currentOrder.getStatus() != Order.Status.COMPLETED)) {
-        throw new CustomException("Table can only be freed when the current order is in an appropriate state.", HttpStatus.BAD_REQUEST);
+    if(currentOrder != null) {
+        if (currentOrder.getStatus() != Order.Status.MERGED && currentOrder.getStatus() != Order.Status.REMOVED_WITHOUT_CREATING
+                && currentOrder.getStatus() != Order.Status.COMPLETED) {
+            throw new CustomException("Table can only be freed when the current order is in an appropriate state.", HttpStatus.BAD_REQUEST);
+        }
     }
-
-    currentOrder.setEndTime(LocalDateTime.now());
+    if(currentOrder != null) {
+        currentOrder.setEndTime(LocalDateTime.now());
+    }
     table.setCurrentOrder(null); // Clear the current order when freeing the table
     table.setStatus(RestaurantTable.TableStatus.FREE);
     return restaurantTableRepository.save(table);

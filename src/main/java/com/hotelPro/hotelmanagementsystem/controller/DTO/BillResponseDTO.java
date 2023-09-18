@@ -10,6 +10,7 @@ public class BillResponseDTO {
     private Long id;
     private Long orderId;
     private double amount;
+    private Double dueAmount;
     private Bill.BillStatus status;
     private Set<Bill.PaymentMode> paymentMode;
     private Long tableId;
@@ -33,6 +34,10 @@ public class BillResponseDTO {
 
         if(bill.getCustomer() != null) {
             this.customerId = bill.getCustomer().getId();
+        }
+
+        if(bill.getDueAmount()!=null){
+            this.dueAmount = bill.getDueAmount();
         }
     }
 
@@ -60,6 +65,14 @@ public class BillResponseDTO {
 
     public void setAmount(double amount) {
         this.amount = amount;
+    }
+
+    public Double getDueAmount() {
+        return dueAmount;
+    }
+
+    public void setDueAmount(Double dueAmount) {
+        this.dueAmount = dueAmount;
     }
 
     public Bill.BillStatus getStatus() {

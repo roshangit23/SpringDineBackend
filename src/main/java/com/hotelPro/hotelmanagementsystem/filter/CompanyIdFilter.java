@@ -121,10 +121,10 @@ try {
     filterChain.doFilter(request, response);
 }
 
-catch (NullPointerException e) {
-    sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid token or missing companyId claim");
-    return;
-}
+//catch (NullPointerException e) {
+//    sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid token or missing companyId claim");
+//    return;
+//}
 catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
     sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid companyId in path");
     return;

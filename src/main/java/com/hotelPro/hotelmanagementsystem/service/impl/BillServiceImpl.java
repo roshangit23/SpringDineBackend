@@ -112,13 +112,21 @@ public class BillServiceImpl implements BillService {
             if (bill.getCustomer() == null) {
                 throw new CustomException("Customer details are mandatory when payment mode is DUE.", HttpStatus.BAD_REQUEST);
             }
+            if (totalPaid < bill.getAmount()) {
+                throw new CustomException("The total payment including DUE is less than the bill amount", HttpStatus.BAD_REQUEST);
+            } else if (totalPaid > bill.getAmount()) {
+                throw new CustomException("The total payment including DUE is more than the bill amount", HttpStatus.BAD_REQUEST);
+            }
             customerService.saveCustomerForBill(bill.getCustomer(), Bill.PaymentMode.DUE);
+            double dueAmount = paymentModes.get(Bill.PaymentMode.DUE);
+            bill.setDueAmount(dueAmount);
             bill.setStatus(Bill.BillStatus.NOT_SETTLED);
         } else if (totalPaid < bill.getAmount()) {
             throw new CustomException("The total payment is less than the bill amount", HttpStatus.BAD_REQUEST);
         } else if (totalPaid > bill.getAmount()) {
             throw new CustomException("The total payment is more than the bill amount", HttpStatus.BAD_REQUEST);
         } else {
+            bill.setDueAmount(null);
             bill.setStatus(Bill.BillStatus.SETTLED);
         }
 

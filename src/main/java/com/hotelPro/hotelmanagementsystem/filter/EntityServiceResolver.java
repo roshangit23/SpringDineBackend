@@ -390,6 +390,58 @@ public class EntityServiceResolver {
                     entities.add(order);
                 }
             }
+
+            // Pattern to match /foodItemOrders/{orderId}
+            else if (path.matches("/orders/foodItemOrders/\\d+")) {
+                Long orderId = extractIdFromPath(path, 3);
+                Order order = orderService.getOrderById(orderId);
+                if (order != null) {
+                    entities.add(order);
+                }
+            }
+
+            // Pattern to match /foodItemOrder/duration/{orderId}/{foodItemId}
+            if (path.matches("/orders/foodItemOrder/duration/\\d+/\\d+")) {
+                Long orderId = extractIdFromPath(path, 4);
+                Long foodItemId = extractIdFromPath(path, 5);
+                Order order = orderService.getOrderById(orderId);
+                FoodItem foodItem = foodItemService.getFoodItemById(foodItemId);
+                if (order != null) {
+                    entities.add(order);
+                }
+                if (foodItem != null) {
+                    entities.add(foodItem);
+                }
+            }
+
+            // Pattern to match /foodItemOrderDetails/{orderId}
+            else if (path.matches("/orders/foodItemOrderDetails/\\d+")) {
+                Long orderId = extractIdFromPath(path, 3);
+                Order order = orderService.getOrderById(orderId);
+                if (order != null) {
+                    entities.add(order);
+                }
+            }
+
+            // Pattern to match /foodItemOrderDetail/duration/{orderId}/{foodItemId}/{foodItemOrderDetailId}
+            else if (path.matches("/orders/foodItemOrderDetail/duration/\\d+/\\d+/\\d+")) {
+                Long orderId = extractIdFromPath(path, 4);
+                Long foodItemId = extractIdFromPath(path, 5);
+                Long foodItemOrderDetailId = extractIdFromPath(path, 6);
+                Order order = orderService.getOrderById(orderId);
+                FoodItem foodItem = foodItemService.getFoodItemById(foodItemId);
+                FoodItemOrderDetail foodItemOrderDetail = orderService.getFoodItemOrderDetailById(foodItemOrderDetailId);
+                if (order != null) {
+                    entities.add(order);
+                }
+                if (foodItem != null) {
+                    entities.add(foodItem);
+                }
+                if (foodItemOrderDetail != null) {
+                    entities.add(foodItemOrderDetail);
+                }
+            }
+
         }
         // Handle POST methods
         else if ("POST".equalsIgnoreCase(method)) {
@@ -470,6 +522,25 @@ public class EntityServiceResolver {
                 Order order = orderService.getOrderById(orderId);
                 if (order != null) {
                     entities.add(order);
+                }
+            }
+
+            // Pattern to match /foodItemOrder/status/{orderId}/{foodItemId}
+            if (path.matches("/orders/foodItemOrder/status/\\d+/\\d+/\\d+")) {
+                Long orderId = extractIdFromPath(path, 4);
+                Long foodItemId = extractIdFromPath(path, 5);
+                Long foodItemOrderDetailId = extractIdFromPath(path, 6);
+                Order order = orderService.getOrderById(orderId);
+                FoodItem foodItem = foodItemService.getFoodItemById(foodItemId);
+                FoodItemOrderDetail foodItemOrderDetail = orderService.getFoodItemOrderDetailById(foodItemOrderDetailId);
+                if (order != null) {
+                    entities.add(order);
+                }
+                if (foodItem != null) {
+                    entities.add(foodItem);
+                }
+                if (foodItemOrderDetail != null) {
+                    entities.add(foodItemOrderDetail);
                 }
             }
         }
