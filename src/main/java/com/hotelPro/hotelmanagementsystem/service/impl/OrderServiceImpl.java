@@ -15,8 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +32,9 @@ public class OrderServiceImpl implements OrderService {
     private FoodItemRepository foodItemRepository;
     @Autowired
     private FoodItemOrderRepository foodItemOrderRepository;
+
+    @Autowired
+    private FoodItemOrderDetailRepository foodItemOrderDetailRepository;
 
     @Autowired
     private InventoryRepository inventoryRepository;
@@ -48,7 +55,7 @@ public class OrderServiceImpl implements OrderService {
    @Autowired
    private CompanyRepository companyRepository;
 
-    private Order convertToEntity(OrderRequestDTO orderRequestDTO) {
+    private Order convertToEntity(OrderRequestDTO orderRequestDTO, Company company) {
         Order order = new Order();
         if(orderRequestDTO.getComments()!=null){
             order.setComments(orderRequestDTO.getComments());
@@ -87,13 +94,15 @@ public class OrderServiceImpl implements OrderService {
 
         if (orderRequestDTO.getFoodItemOrders() != null) {
             Set<FoodItemOrder> foodItemOrders = orderRequestDTO.getFoodItemOrders().stream()
-                    .map(this::convertFoodItemOrderToEntity)   // calling the conversion method for FoodItemOrder
+                    .map(foodItemOrderDTO -> convertFoodItemOrderToEntity(foodItemOrderDTO, company))   // calling the conversion method for FoodItemOrder
                     .collect(Collectors.toSet());
+
             order.setFoodItemOrders(foodItemOrders);
         }else {
             order.setFoodItemOrders(new HashSet<>());
         }
-
+        order.setStartTime(LocalDateTime.now());  // Set the start time for new orders
+        order.setCompany(company);
         return order;
     }
 
@@ -128,7 +137,7 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", orderRequestDTO.getEmployeeId()));
             order.setAssignedEmployee(employee);
         }
-
+        Company company = order.getCompany();
         // Set<FoodItemOrder> requires a bit more complex handling
         // As we can't just set DTO fields into entity
         // We should create new FoodItemOrder entities with appropriate links
@@ -155,16 +164,28 @@ public class OrderServiceImpl implements OrderService {
                     if (foodItemOrderDTO.getComments() != null) {
                         existingOrder.get().setComments(foodItemOrderDTO.getComments());
                     }
+                   //existingOrder.get().setCompany(company);
+                    // Create a new FoodItemOrderDetail entity and set its properties
+                    FoodItemOrderDetail foodItemOrderDetail = new FoodItemOrderDetail();
+                    foodItemOrderDetail.setQuantity(foodItemOrderDTO.getQuantity());
+                    foodItemOrderDetail.setStatus(FoodItemOrder.Status.PLACED); // Set the status to PLACED
+                    foodItemOrderDetail.setPlace_time(LocalDateTime.now());
+                    foodItemOrderDetail.setCompany(company);
+                    // Link the FoodItemOrderDetail to the FoodItemOrder
+                    foodItemOrderDetail.setFoodItemOrder(existingOrder.get());
+                    // Add the FoodItemOrderDetail to the FoodItemOrder's collection of details
+                    existingOrder.get().getFoodItemOrderDetails().add(foodItemOrderDetail);
+
                 } else {
                     // If it doesn't exist, add a new FoodItemOrder
-                    FoodItemOrder newFoodItemOrder = convertFoodItemOrderToEntity(foodItemOrderDTO);
+                    FoodItemOrder newFoodItemOrder = convertFoodItemOrderToEntity(foodItemOrderDTO, company);
                     order.getFoodItemOrders().add(newFoodItemOrder);
                 }
             }
         }
     }
 
-    private FoodItemOrder convertFoodItemOrderToEntity(FoodItemOrderDTO foodItemOrderDTO) {
+    private FoodItemOrder convertFoodItemOrderToEntity(FoodItemOrderDTO foodItemOrderDTO, Company company) {
         FoodItemOrder foodItemOrder = new FoodItemOrder();
         if(foodItemOrderDTO.getQuantity()==null){
             throw new CustomException("'quantity' for foodItemOrders is mandatory", HttpStatus.BAD_REQUEST);
@@ -172,11 +193,26 @@ public class OrderServiceImpl implements OrderService {
         if(foodItemOrderDTO.getFoodItemId()==null){
             throw new CustomException("'foodItemId' for foodItemOrders is mandatory", HttpStatus.BAD_REQUEST);
         }
+        foodItemOrder.setCompany(company);
         foodItemOrder.setQuantity(foodItemOrderDTO.getQuantity());
         foodItemOrder.setComments(foodItemOrderDTO.getComments());
 
         FoodItem foodItem = foodItemService.findById(foodItemOrderDTO.getFoodItemId());
         foodItemOrder.setFoodItem(foodItem);
+        foodItemOrder.setStatus(FoodItemOrder.Status.PLACED);  // Set the status to PLACED
+        foodItemOrder.setPlace_time(LocalDateTime.now());
+
+        // Create a new FoodItemOrderDetail entity and set its properties
+        FoodItemOrderDetail foodItemOrderDetail = new FoodItemOrderDetail();
+        foodItemOrderDetail.setCompany(company);
+        foodItemOrderDetail.setQuantity(foodItemOrderDTO.getQuantity());
+        foodItemOrderDetail.setStatus(FoodItemOrder.Status.PLACED); // Set the status to PLACED
+        foodItemOrderDetail.setPlace_time(LocalDateTime.now());
+
+        // Link the FoodItemOrderDetail to the FoodItemOrder
+        foodItemOrderDetail.setFoodItemOrder(foodItemOrder);
+        // Add the FoodItemOrderDetail to the FoodItemOrder's collection of details
+        foodItemOrder.getFoodItemOrderDetails().add(foodItemOrderDetail);
 
         return foodItemOrder;
     }
@@ -187,35 +223,24 @@ public class OrderServiceImpl implements OrderService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId));
         //return saveOrder(orderRequestDTO,orderId, null);
-      Order order = convertToEntity(orderRequestDTO);
-        order.setStartTime(LocalDateTime.now());  // Set the start time for new orders
-        order.setCompany(company);
+      Order order = convertToEntity(orderRequestDTO,company);
         return order;
     }
     @Override
     @Transactional
     public Order saveOrder(OrderRequestDTO orderRequestDTO, Long orderId, Long employeeId) {
-        Order order;
 
         // If orderId is provided, then it's an update. Fetch the existing order.
-        if(orderId != null) {
-            order = orderRepository.findById(orderId)
+        Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
-            if(order.getStatus()== Order.Status.COMPLETED || order.getStatus()== Order.Status.MERGED || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
+            if (order.getStatus() == Order.Status.COMPLETED || order.getStatus() == Order.Status.MERGED || order.getStatus() == Order.Status.REMOVED_WITHOUT_CREATING) {
                 throw new CustomException("Order cannot be updated once order is completed, merged or removed", HttpStatus.BAD_REQUEST);
             }
             if (order.getBill() != null) {
-                throw new CustomException("Cannot update order that is already billed",HttpStatus.BAD_REQUEST);
+                throw new CustomException("Cannot update order that is already billed", HttpStatus.BAD_REQUEST);
             }
             updateOrderFromDTO(order, orderRequestDTO);  // Update the existing order with the DTO data
-        } else {
-            // Else, create a new order
-            order = convertToEntity(orderRequestDTO);
-            order.setStartTime(LocalDateTime.now());  // Set the start time for new orders
-        }
-//        if(order.getType()==Order.OrderType.DINE_IN){
-//            order.setRestaurantTable();
-//        }
+
         if (employeeId != null) {
             Employee employee = employeeRepository.findById(employeeId)
                     .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
@@ -283,7 +308,10 @@ public class OrderServiceImpl implements OrderService {
     public void deleteOrder(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
-        if(order.getStatus()== Order.Status.IN_PROGRESS || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
+//        if(order.getStatus()== Order.Status.IN_PROGRESS || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
+//            throw new CustomException("Order cannot be deleted once order is completed, merged or removed", HttpStatus.BAD_REQUEST);
+//        }
+        if(order.getStatus()== Order.Status.COMPLETED || order.getStatus()== Order.Status.MERGED || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
             throw new CustomException("Order cannot be deleted once order is completed, merged or removed", HttpStatus.BAD_REQUEST);
         }
         orderRepository.deleteById(id);
@@ -312,7 +340,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Order addFoodItemToOrder(Long orderId, Long foodItemId,int quantity) {
+    public Order addFoodItemToOrder(Long orderId, Long foodItemId, int quantity) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         if(order.getStatus()== Order.Status.COMPLETED || order.getStatus()== Order.Status.MERGED || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
@@ -323,29 +351,40 @@ public class OrderServiceImpl implements OrderService {
         if (existingBill.isPresent()) {
             throw new CustomException("Cannot update Order as a Bill has already been generated for it.", HttpStatus.BAD_REQUEST);
         }
-
         FoodItem foodItem = foodItemRepository.findById(foodItemId)
                 .orElseThrow(() -> new ResourceNotFoundException("FoodItem", "id", foodItemId));
+      Company company = order.getCompany();
+        FoodItemOrder foodItemOrder = order.getFoodItemOrders()
+                .stream()
+                .filter(fio -> fio.getFoodItem().getId().equals(foodItemId))
+                .findFirst()
+                .orElseGet(() -> {
+                    FoodItemOrder newFoodItemOrder = new FoodItemOrder();
+                    newFoodItemOrder.setFoodItem(foodItem);
+                    newFoodItemOrder.setQuantity(0);  // Initialize quantity to 0
+                    newFoodItemOrder.setStatus(FoodItemOrder.Status.PLACED);
+                    newFoodItemOrder.setPlace_time(LocalDateTime.now());
+                    newFoodItemOrder.setCompany(company);
+                    order.addFoodItemOrder(newFoodItemOrder);
+                    return newFoodItemOrder;
+                });
 
-        // Check if food item is already present in the order
-        boolean itemFound = false;
-        for (FoodItemOrder foodItemOrder : order.getFoodItemOrders()) {
-            if (foodItemOrder.getFoodItem().getId().equals(foodItemId)) {
-                foodItemOrder.setQuantity(foodItemOrder.getQuantity() + quantity);
-                foodItemOrderRepository.save(foodItemOrder);
-                itemFound = true;
-                break;
-            }
-        }
-        // If food item is not present in the order, add a new FoodItemOrder
-        if (!itemFound) {
-            FoodItemOrder foodItemOrder = new FoodItemOrder(foodItem, order, quantity);
-            order.addFoodItemOrder(foodItemOrder);
-            orderRepository.save(order);
-        }
+        // Update the quantity of the FoodItemOrder
+        foodItemOrder.setQuantity(foodItemOrder.getQuantity() + quantity);
 
+        FoodItemOrderDetail detail = new FoodItemOrderDetail();
+        detail.setQuantity(quantity);
+        detail.setStatus(FoodItemOrder.Status.PLACED);
+        detail.setPlace_time(LocalDateTime.now());
+        detail.setCompany(company);
+        // Link the FoodItemOrderDetail to the FoodItemOrder
+        detail.setFoodItemOrder(foodItemOrder);
+        // Add the FoodItemOrderDetail to the FoodItemOrder's collection of details
+        foodItemOrder.addFoodItemOrderDetail(detail);
+        orderRepository.save(order);
         return order;
     }
+
 
     @Override
     public Order removeFoodItemFromOrder(Long orderId, Long foodItemId, int quantity) {
@@ -519,6 +558,193 @@ public class OrderServiceImpl implements OrderService {
         discountAmount = (discount.getPercentage() / 100) * calculateTotal(order);
 
         return discountAmount;
+    }
+
+    @Override
+    public Set<FoodItemOrder> getAllFoodItemOrdersByOrderId(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        return order.getFoodItemOrders();
+    }
+
+@Override
+public Set<FoodItemOrder> getAllFoodItemOrdersByCompanyId(Long companyId) {
+    // Check if the company exists
+    if (!companyRepository.existsById(companyId)) {
+        throw new ResourceNotFoundException("Company", "id", companyId);
+    }
+    // Fetch all FoodItemOrders associated with the given companyId
+    return foodItemOrderRepository.findByCompanyId(companyId);
+}
+
+    @Override
+    public Set<FoodItemOrder> getFoodItemOrdersByStatusAndCompanyId(Long companyId, FoodItemOrder.Status status) {
+        // Check if the company exists
+        if (!companyRepository.existsById(companyId)) {
+            throw new ResourceNotFoundException("Company", "id", companyId);
+        }
+        // Fetch all FoodItemOrders associated with the given companyId and status
+        return foodItemOrderRepository.findByCompanyIdAndStatus(companyId, status);
+    }
+
+    @Override
+    @Transactional
+    public FoodItemOrder updateFoodItemOrderStatus(Long orderId, Long foodItemId, Long foodItemOrderDetailId, FoodItemOrder.Status status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+        FoodItemOrder foodItemOrder = order.getFoodItemOrders()
+                .stream()
+                .filter(fio -> fio.getFoodItem().getId().equals(foodItemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("FoodItemOrder", "foodItemId", foodItemId));
+
+        FoodItemOrderDetail targetDetail = foodItemOrder.getFoodItemOrderDetails()
+                .stream()
+                .filter(detail -> detail.getId().equals(foodItemOrderDetailId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("FoodItemOrderDetail", "id", foodItemOrderDetailId));
+   try {
+       if(targetDetail.getStatus() == FoodItemOrder.Status.CANCELED || targetDetail.getStatus() == FoodItemOrder.Status.COMPLETED){
+           throw new CustomException("cannot update foodItemOrderDetail which is completed or cancelled", HttpStatus.BAD_REQUEST);
+       }
+       // Update the specific FoodItemOrderDetail's status
+       if (status == FoodItemOrder.Status.CANCELED && (targetDetail.getStatus() == FoodItemOrder.Status.PLACED || targetDetail.getStatus() == FoodItemOrder.Status.IN_PROGRESS)) {
+           targetDetail.setStatus(status);
+           targetDetail.setEnd_time(LocalDateTime.now());
+       } else if (status != FoodItemOrder.Status.CANCELED) {
+           targetDetail.setStatus(status);
+           if (status == FoodItemOrder.Status.IN_PROGRESS) {
+               if(targetDetail.getStart_time()==null){
+                   targetDetail.setStart_time(LocalDateTime.now());
+               }
+           }
+           if (status == FoodItemOrder.Status.COMPLETED) {
+               targetDetail.setEnd_time(LocalDateTime.now());
+           }
+       }
+
+   }
+   catch (IllegalArgumentException e) {
+       throw new InvalidEnumValueException("status", "Invalid value for status");
+   }
+        boolean allCompleted = true;
+        boolean anyInProgress = false;
+        boolean allCancelled = true;
+        boolean anyPlaced = false;
+
+        for (FoodItemOrderDetail detail : foodItemOrder.getFoodItemOrderDetails()) {
+            if (detail.getStatus() != FoodItemOrder.Status.COMPLETED) {
+                allCompleted = false;
+            }
+            if (detail.getStatus() == FoodItemOrder.Status.IN_PROGRESS) {
+                anyInProgress = true;
+            }
+            if (detail.getStatus() != FoodItemOrder.Status.CANCELED) {
+                allCancelled = false;
+            }
+            if (detail.getStatus() == FoodItemOrder.Status.PLACED) {
+                anyPlaced = true;
+            }
+        }
+
+        // Update FoodItemOrder status based on the statuses of its details
+        if (allCompleted || (!anyInProgress && !anyPlaced && !allCancelled)) {
+            foodItemOrder.setStatus(FoodItemOrder.Status.COMPLETED);
+            foodItemOrder.setEnd_time(LocalDateTime.now());
+        } else if (anyInProgress) {
+            foodItemOrder.setStatus(FoodItemOrder.Status.IN_PROGRESS);
+            if(foodItemOrder.getStart_time() == null){
+                foodItemOrder.setStart_time(LocalDateTime.now());
+            }
+        } else if (allCancelled) {
+            foodItemOrder.setStatus(FoodItemOrder.Status.CANCELED);
+            foodItemOrder.setEnd_time(LocalDateTime.now());
+        } else {
+            foodItemOrder.setStatus(FoodItemOrder.Status.PLACED);
+        }
+
+        return foodItemOrderRepository.save(foodItemOrder);
+    }
+
+
+    @Override
+    public Duration getTimeTakenForFoodItemOrder(Long orderId, Long foodItemId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        FoodItemOrder foodItemOrder = order.getFoodItemOrders().stream()
+                .filter(fio -> fio.getFoodItem().getId().equals(foodItemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("FoodItemOrder", "foodItemId", foodItemId));
+        if (foodItemOrder.getStatus() == FoodItemOrder.Status.PLACED) {
+            return Duration.between(foodItemOrder.getPlace_time(), LocalDateTime.now());
+        }
+        if (foodItemOrder.getStatus() == FoodItemOrder.Status.IN_PROGRESS) {
+            return Duration.between(foodItemOrder.getStart_time(), LocalDateTime.now());
+        }
+        if (foodItemOrder.getStart_time() == null || foodItemOrder.getEnd_time() == null) {
+            throw new CustomException("Start time or end time is not set for the FoodItemOrder", HttpStatus.BAD_REQUEST);
+        }
+        return Duration.between(foodItemOrder.getStart_time(), foodItemOrder.getEnd_time());
+    }
+
+    @Override
+    public Set<FoodItemOrderDetail> getAllFoodItemOrderDetailsByCompanyId(Long companyId) {
+        // Check if the company exists
+        if (!companyRepository.existsById(companyId)) {
+            throw new ResourceNotFoundException("Company", "id", companyId);
+        }
+        // Fetch all FoodItemOrderDetails associated with the given companyId
+        return foodItemOrderDetailRepository.findByCompanyId(companyId);
+    }
+
+    @Override
+    public Set<FoodItemOrderDetail> getAllFoodItemOrderDetailsByOrderId(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        return order.getFoodItemOrders().stream()
+                .flatMap(fio -> fio.getFoodItemOrderDetails().stream())
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<FoodItemOrderDetail> getFoodItemOrderDetailsByStatusAndCompanyId(Long companyId, FoodItemOrder.Status status) {
+        // Check if the company exists
+        if (!companyRepository.existsById(companyId)) {
+            throw new ResourceNotFoundException("Company", "id", companyId);
+        }
+        // Fetch all FoodItemOrderDetails associated with the given companyId and status
+        return foodItemOrderDetailRepository.findByCompanyIdAndStatus(companyId, status);
+    }
+
+    @Override
+    public Duration getTimeTakenForFoodItemOrderDetail(Long orderId, Long foodItemId, Long foodItemOrderDetailId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        FoodItemOrder foodItemOrder = order.getFoodItemOrders().stream()
+                .filter(fio -> fio.getFoodItem().getId().equals(foodItemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("FoodItemOrder", "foodItemId", foodItemId));
+        FoodItemOrderDetail foodItemOrderDetail = foodItemOrder.getFoodItemOrderDetails().stream()
+                .filter(fiod -> fiod.getId().equals(foodItemOrderDetailId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("FoodItemOrderDetail", "id", foodItemOrderDetailId));
+        if (foodItemOrderDetail.getStatus() == FoodItemOrder.Status.PLACED) {
+            return Duration.between(foodItemOrderDetail.getPlace_time(), LocalDateTime.now());
+        }
+        if (foodItemOrderDetail.getStatus() == FoodItemOrder.Status.IN_PROGRESS) {
+            return Duration.between(foodItemOrderDetail.getStart_time(), LocalDateTime.now());
+        }
+        if (foodItemOrderDetail.getStart_time() == null || foodItemOrderDetail.getEnd_time() == null) {
+            throw new CustomException("Start time or end time is not set for the FoodItemOrderDetail", HttpStatus.BAD_REQUEST);
+        }
+        return Duration.between(foodItemOrderDetail.getStart_time(), foodItemOrderDetail.getEnd_time());
+    }
+
+    @Override
+    public FoodItemOrderDetail getFoodItemOrderDetailById(Long foodItemOrderDetailId) {
+        return foodItemOrderDetailRepository.findById(foodItemOrderDetailId)
+                .orElseThrow(() -> new ResourceNotFoundException("FoodItemOrderDetail", "id", foodItemOrderDetailId));
     }
 
 }

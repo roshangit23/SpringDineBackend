@@ -4,7 +4,6 @@ import com.hotelPro.hotelmanagementsystem.exception.CustomException;
 import com.hotelPro.hotelmanagementsystem.model.Company;
 import com.hotelPro.hotelmanagementsystem.model.User;
 import com.hotelPro.hotelmanagementsystem.repository.UserRepository;
-import com.hotelPro.hotelmanagementsystem.service.CustomUserDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -14,11 +13,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.GrantedAuthority;
 
 import java.io.IOException;
 import java.util.Date;
@@ -32,12 +31,8 @@ public class JwtTokenProvider {
     private String secretKey;
     @Value("${security.jwt.token.expire-length:3600000}")
     private long validityInMilliseconds = 3600000; // 1 hour
-
     @Autowired
     private UserDetailsService userDetailsService;
-
-    @Autowired
-    private CustomUserDetails customUserDetails;
     @Autowired
     private UserRepository userRepository;
     public String createToken(String username, Long companyId) {
@@ -99,11 +94,10 @@ public class JwtTokenProvider {
         Claims claims = Jwts.claims().setSubject(username);
         List<String> roles = getRolesByUsername(username);  // Fetch roles based on username
         claims.put("roles", roles);  // Add roles to the token
-
         // Check if the user is a dashboard user
         if (roles.contains("DASHBOARD_USER")) {
             // Fetch the companyIds for the dashboard user
-            List<Long> companyIds = customUserDetails.getCompanies().stream()
+            List<Long> companyIds = user.getCompanies().stream()
                     .map(Company::getId)
                     .collect(Collectors.toList());
             claims.put("companyIds", companyIds);

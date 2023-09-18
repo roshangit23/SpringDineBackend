@@ -28,6 +28,8 @@ public class Bill implements CompanyAssociatedEntity {
 
     @Column(name = "amount")
     private double amount;
+    @Column
+    private Double dueAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
@@ -82,6 +84,14 @@ public class Bill implements CompanyAssociatedEntity {
 
     public void setAmount(double amount) {
         this.amount = amount;
+    }
+
+    public Double getDueAmount() {
+        return dueAmount;
+    }
+
+    public void setDueAmount(Double dueAmount) {
+        this.dueAmount = dueAmount;
     }
 
     public BillStatus getStatus() {
