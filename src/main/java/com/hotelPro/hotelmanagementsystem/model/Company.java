@@ -9,39 +9,37 @@ import java.util.Set;
 @Entity
 @Table(name = "companies")
 public class Company {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @Column(unique = true, nullable = false)
     private String name;
-
     @Column(nullable = false)
     private String address;
-
     @Column(nullable = false)
     private String city;
-
     @Column(nullable = false)
     private String state;
-
     @Column(nullable = false)
     private String country;
-
     @Column(nullable = false)
     private String postalCode;
     @Column
     private String phoneNumber;
     @Column
     private String email;
-
     @Column
     private String logoUrl;
-
     @Column
     private String taxIdentificationNumber;
 
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "company_restaurant_section",
+            joinColumns = @JoinColumn(name = "company_id"),
+            inverseJoinColumns = @JoinColumn(name = "restaurant_section_id")
+    )
+    private Set<RestaurantSection> restaurantSections = new HashSet<>();
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL)
     private List<User> users;
 
@@ -140,6 +138,14 @@ public class Company {
 
     public void setTaxIdentificationNumber(String taxIdentificationNumber) {
         this.taxIdentificationNumber = taxIdentificationNumber;
+    }
+
+    public Set<RestaurantSection> getRestaurantSections() {
+        return restaurantSections;
+    }
+
+    public void setRestaurantSections(Set<RestaurantSection> restaurantSections) {
+        this.restaurantSections = restaurantSections;
     }
 
     public List<User> getUsers() {

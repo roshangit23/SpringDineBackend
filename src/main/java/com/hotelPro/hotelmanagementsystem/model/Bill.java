@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
-@Table(name = "bills")
+@Table(name = "bills", uniqueConstraints = @UniqueConstraint(columnNames = {"bill_no", "company_id"}))
 public class Bill implements CompanyAssociatedEntity {
 
     public enum BillStatus {
@@ -22,12 +22,23 @@ public class Bill implements CompanyAssociatedEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "bill_no", unique = true)
+    private Long billNo;
+
     @OneToOne(cascade = CascadeType.MERGE)
     @JoinColumn(name = "order_id", referencedColumnName = "id")
     private Order order;
 
     @Column(name = "amount")
     private double amount;
+    @Column(name = "cgst")
+    private double cgst;
+
+    @Column(name = "sgst")
+    private double sgst;
+
+    @Column(name = "total_amount")
+    private double totalAmount;
     @Column
     private Double dueAmount;
 
@@ -70,6 +81,14 @@ public class Bill implements CompanyAssociatedEntity {
         this.id = id;
     }
 
+    public Long getBillNo() {
+        return billNo;
+    }
+
+    public void setBillNo(Long billNo) {
+        this.billNo = billNo;
+    }
+
     public Order getOrder() {
         return order;
     }
@@ -84,6 +103,30 @@ public class Bill implements CompanyAssociatedEntity {
 
     public void setAmount(double amount) {
         this.amount = amount;
+    }
+
+    public double getCgst() {
+        return cgst;
+    }
+
+    public void setCgst(double cgst) {
+        this.cgst = cgst;
+    }
+
+    public double getSgst() {
+        return sgst;
+    }
+
+    public void setSgst(double sgst) {
+        this.sgst = sgst;
+    }
+
+    public double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(double totalAmount) {
+        this.totalAmount = totalAmount;
     }
 
     public Double getDueAmount() {

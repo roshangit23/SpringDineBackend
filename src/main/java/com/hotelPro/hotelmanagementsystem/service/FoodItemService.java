@@ -12,7 +12,11 @@ public interface FoodItemService {
 
     FoodItem findById(Long id);
 
-    FoodItem findByItemName(String itemName);
+    //FoodItem findByItemName(String itemName);
+    FoodItem findByItemNameAndCompanyId(String itemName, Long companyId);
 
     FoodItem updateFoodItem(Long id, FoodItem foodItem);
+
+
+    FoodItem findByShortCodeAndCompanyId(String shortCode, Long companyId);
 }

@@ -40,4 +40,6 @@ public interface OrderService {
     Set<FoodItemOrderDetail> getFoodItemOrderDetailsByStatusAndCompanyId(Long companyId, FoodItemOrder.Status status);
     Duration getTimeTakenForFoodItemOrderDetail(Long orderId, Long foodItemId, Long foodItemOrderDetailId);
     FoodItemOrderDetail getFoodItemOrderDetailById(Long foodItemOrderDetailId);
+
+    Order findByOrderNoAndCompanyId(Long orderNo, Long companyId);
 }

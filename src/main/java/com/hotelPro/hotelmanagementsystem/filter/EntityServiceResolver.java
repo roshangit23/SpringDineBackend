@@ -82,19 +82,19 @@ public class EntityServiceResolver {
         // Handle POST methods
         else if ("POST".equalsIgnoreCase(method)) {
             // Pattern to match /bills/{orderId}
-            if (path.matches("/bills/\\d+")) {
-                Long orderId = extractIdFromPath(path, 2);
+            if (path.matches("/bills/create/\\d+")) {
+                Long orderId = extractIdFromPath(path, 3);
                 // Fetch the order using the orderId
                 Order order = orderService.getOrderById(orderId);
                 if (order != null) {
                     entities.add(order);
                 }
             }
-            else if (path.matches("/bills/\\d+/\\w+")) {
-                Long orderId = Long.parseLong(path.split("/")[2]);
-                String discountCode = path.split("/")[3];
+            else if (path.matches("/bills/create/\\d+/\\d+")) {
+                Long orderId = Long.parseLong(path.split("/")[3]);
+                Long discountId = Long.parseLong(path.split("/")[4]);
                 Order order = orderService.getOrderById(orderId);
-                Discount discount = discountService.getDiscountByCode(discountCode);
+                Discount discount = discountService.getDiscountById(discountId);
                 entities.add(order);
                 entities.add(discount);
             }
@@ -189,11 +189,11 @@ public class EntityServiceResolver {
                 }
             }
             // Pattern to match /discounts/calculateDiscountedTotal/{orderId}/{discountCode}
-            else if (path.matches("/discounts/calculateDiscountedTotal/\\d+/\\w+")) {
+            else if (path.matches("/discounts/calculateDiscountedTotal/\\d+/\\d+")) {
                 Long orderId = Long.parseLong(path.split("/")[3]);
-                String discountCode = path.split("/")[4];
+                Long discountId =Long.parseLong(path.split("/")[4]);
                 Order order = orderService.getOrderById(orderId);
-                Discount discount = discountService.getDiscountByCode(discountCode);
+                Discount discount = discountService.getDiscountById(discountId);
                 entities.add(order);
                 entities.add(discount);
             }
@@ -286,13 +286,13 @@ public class EntityServiceResolver {
                 }
             }
             // Pattern to match /foodItems/name/{name}
-            else if (path.startsWith("/foodItems/name/")) {
-                String foodItemName = path.split("/")[3];
-                FoodItem foodItem = foodItemService.findByItemName(foodItemName);
-                if (foodItem != null) {
-                    entities.add(foodItem);
-                }
-            }
+//            else if (path.startsWith("/foodItems/name/")) {
+//                String foodItemName = path.split("/")[3];
+//                FoodItem foodItem = foodItemService.findByItemName(foodItemName);
+//                if (foodItem != null) {
+//                    entities.add(foodItem);
+//                }
+//            }
         }
         // Handle PUT methods
         else if ("PUT".equalsIgnoreCase(method)) {

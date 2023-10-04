@@ -8,8 +8,12 @@ import java.util.Set;
 public class BillResponseDTO {
 
     private Long id;
+    private Long billNo;
     private Long orderId;
     private double amount;
+    private double cgst;
+    private double sgst;
+    private double totalAmount;
     private Double dueAmount;
     private Bill.BillStatus status;
     private Set<Bill.PaymentMode> paymentMode;
@@ -21,8 +25,12 @@ public class BillResponseDTO {
     // Constructor
     public BillResponseDTO(Bill bill) {
         this.id = bill.getId();
+        this.billNo = bill.getBillNo();
         this.orderId = bill.getOrder().getId();
         this.amount = bill.getAmount();
+        this.cgst = bill.getCgst();
+        this.sgst = bill.getSgst();
+        this.totalAmount = bill.getTotalAmount();
         this.status = bill.getStatus();
         this.paymentMode = bill.getPaymentMode();
         if (bill.getRestaurantTable() != null) {
@@ -51,6 +59,14 @@ public class BillResponseDTO {
         this.id = id;
     }
 
+    public Long getBillNo() {
+        return billNo;
+    }
+
+    public void setBillNo(Long billNo) {
+        this.billNo = billNo;
+    }
+
     public Long getOrderId() {
         return orderId;
     }
@@ -65,6 +81,29 @@ public class BillResponseDTO {
 
     public void setAmount(double amount) {
         this.amount = amount;
+    }
+
+    public double getCgst() {
+        return cgst;
+    }
+    public void setCgst(double cgst) {
+        this.cgst = cgst;
+    }
+
+    public double getSgst() {
+        return sgst;
+    }
+
+    public void setSgst(double sgst) {
+        this.sgst = sgst;
+    }
+
+    public double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(double totalAmount) {
+        this.totalAmount = totalAmount;
     }
 
     public Double getDueAmount() {

@@ -53,6 +53,11 @@ public class OrderController {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new OrderResponseDTO(order)));
     }
 
+    @GetMapping("/getByOrderNo/{companyId}/{orderNo}")
+    public ResponseEntity<ApiResponse<OrderResponseDTO>> getOrderByOrderNoAndCompanyId(@PathVariable Long companyId, @PathVariable Long orderNo) {
+        Order order = orderService.findByOrderNoAndCompanyId(orderNo, companyId);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new OrderResponseDTO(order)));
+    }
     @GetMapping("/getAll/{companyId}")
     public ResponseEntity<ApiResponse<List<OrderResponseDTO>>> getAllOrders(@PathVariable Long companyId) {
         List<Order> orders = orderService.getAllOrders(companyId);

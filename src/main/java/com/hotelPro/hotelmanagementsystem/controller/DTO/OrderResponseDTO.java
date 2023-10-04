@@ -7,8 +7,10 @@ import java.util.stream.Collectors;
 
 public class OrderResponseDTO {
     private Long id;
+    private Long orderNo;
     private Order.Status status;
     private Order.OrderType type;
+    private Long restaurantSectionId;
     private String comments;
     private Set<FoodItemOrderDTO> foodItemOrders;  // Another DTO for this
     // getters, setters, and other fields...
@@ -18,8 +20,10 @@ public class OrderResponseDTO {
     private Integer customer_count;
     public OrderResponseDTO(Order order) {
         this.id = order.getId();
+        this.orderNo = order.getOrderNo();
         this.status = order.getStatus();
         this.type = order.getType();
+        this.restaurantSectionId = order.getRestaurantSection().getId();
         this.comments = order.getComments();
         this.customer_count = order.getCustomer_count();
         //  this.foodItemOrders = order.getFoodItemOrders();
@@ -40,6 +44,13 @@ public class OrderResponseDTO {
         this.id = id;
     }
 
+    public Long getOrderNo() {
+        return orderNo;
+    }
+
+    public void setOrderNo(Long orderNo) {
+        this.orderNo = orderNo;
+    }
 
     public Order.Status getStatus() {
         return status;
@@ -55,6 +66,14 @@ public class OrderResponseDTO {
 
     public void setType(Order.OrderType type) {
         this.type = type;
+    }
+
+    public Long getRestaurantSectionId() {
+        return restaurantSectionId;
+    }
+
+    public void setRestaurantSectionId(Long restaurantSectionId) {
+        this.restaurantSectionId = restaurantSectionId;
     }
 
     public String getComments() {

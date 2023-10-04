@@ -8,15 +8,15 @@ import java.util.stream.Collectors;
 
 public class FoodItemResponseDTO {
     private Long id;
-
     private String itemName;
-
     private Double itemPrice;
-
     private String category;
-
     private String type;
+    private FoodItem.FoodType foodType;
     private String description;
+
+    private String shortCode1;
+    private String shortCode2;
 
     private List<FoodItemInventoryDTO> requiredInventoryItems;
 
@@ -30,7 +30,10 @@ public class FoodItemResponseDTO {
         this.itemPrice = foodItem.getItemPrice();
         this.category = foodItem.getCategory();
         this.type = foodItem.getType();
+        this.foodType = foodItem.getFoodType();
         this.description = foodItem.getDescription();
+        this.shortCode1 = foodItem.getShortCode1();
+        this.shortCode2 = foodItem.getShortCode2();
         this.requiredInventoryItems = foodItem.getRequiredInventoryItems().stream()
                 .map(FoodItemInventoryDTO::new)
                 .collect(Collectors.toList());
@@ -76,12 +79,35 @@ public class FoodItemResponseDTO {
         this.type = type;
     }
 
+    public FoodItem.FoodType getFoodType() {
+        return foodType;
+    }
+
+    public void setFoodType(FoodItem.FoodType foodType) {
+        this.foodType = foodType;
+    }
+
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+    public String getShortCode1() {
+        return shortCode1;
+    }
+
+    public void setShortCode1(String shortCode1) {
+        this.shortCode1 = shortCode1;
+    }
+
+    public String getShortCode2() {
+        return shortCode2;
+    }
+
+    public void setShortCode2(String shortCode2) {
+        this.shortCode2 = shortCode2;
     }
 
     public List<FoodItemInventoryDTO> getRequiredInventoryItems() {
