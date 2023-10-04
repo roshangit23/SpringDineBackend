@@ -60,12 +60,16 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
             throw new CustomException("Table is not free, please select another table.", HttpStatus.CONFLICT);
         }
         Order order = new Order();
+        order.setCompany(table.getCompany());
+        // Generate unique orderNo for the order within the company
+        Long lastOrderNo = orderRepository.findMaxOrderNoByCompany(table.getCompany().getId());
+        order.setOrderNo(lastOrderNo == null ? 1 : lastOrderNo + 1);
+
         order.setStatus(Order.Status.IN_PROGRESS);
         order.setStartTime(LocalDateTime.now());
         order.setType(Order.OrderType.DINE_IN);
         table.setCurrentOrder(order);
        // order.setRestaurantTable(table);
-        order.setCompany(table.getCompany());
         table.setStatus(RestaurantTable.TableStatus.OCCUPIED);
 
       return restaurantTableRepository.save(table);

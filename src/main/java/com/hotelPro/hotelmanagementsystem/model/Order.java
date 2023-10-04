@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "orders", uniqueConstraints = @UniqueConstraint(columnNames = {"order_no", "company_id"}))
 public class Order implements CompanyAssociatedEntity {
     public enum Status {
         IN_PROGRESS,
@@ -24,7 +24,8 @@ public class Order implements CompanyAssociatedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Column(name = "order_no")
+    private Long orderNo;
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private Status status;
@@ -32,7 +33,9 @@ public class Order implements CompanyAssociatedEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "type")
     private OrderType type;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "restaurant_section_id")
+    private RestaurantSection restaurantSection;
     @Column(name = "comments")
     private String comments; // Additional comments about the order
     @Column
@@ -42,7 +45,7 @@ public class Order implements CompanyAssociatedEntity {
     private Set<FoodItemOrder> foodItemOrders = new HashSet<>();
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY, optional = false)
+            fetch = FetchType.LAZY, optional = true)
     private Bill bill;
 
     @OneToOne
@@ -81,6 +84,14 @@ public class Order implements CompanyAssociatedEntity {
         this.id = id;
     }
 
+    public Long getOrderNo() {
+        return orderNo;
+    }
+
+    public void setOrderNo(Long orderNo) {
+        this.orderNo = orderNo;
+    }
+
     public Set<FoodItemOrder> getFoodItemOrders() {
         return foodItemOrders;
     }
@@ -112,7 +123,13 @@ public class Order implements CompanyAssociatedEntity {
     public void setType(OrderType type) {
         this.type = type;
     }
+    public RestaurantSection getRestaurantSection() {
+        return restaurantSection;
+    }
 
+    public void setRestaurantSection(RestaurantSection restaurantSection) {
+        this.restaurantSection = restaurantSection;
+    }
     public String getComments() {
         return comments;
     }

@@ -2,8 +2,10 @@ package com.hotelPro.hotelmanagementsystem.controller;
 
 import com.hotelPro.hotelmanagementsystem.controller.DTO.BillResponseDTO;
 import com.hotelPro.hotelmanagementsystem.model.Bill;
+import com.hotelPro.hotelmanagementsystem.model.Discount;
 import com.hotelPro.hotelmanagementsystem.model.Order;
 import com.hotelPro.hotelmanagementsystem.service.BillService;
+import com.hotelPro.hotelmanagementsystem.service.DiscountService;
 import com.hotelPro.hotelmanagementsystem.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,12 +24,23 @@ public class BillController {
     private BillService billService;
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private DiscountService discountService;
 
-    @PostMapping("/{orderId}")
+    @PostMapping("/create/{orderId}")
     public ResponseEntity<ApiResponse<BillResponseDTO>> createBill(@PathVariable Long orderId,
-                                                                   @RequestParam(required = false) String discountCode) {
+                                                                   @RequestParam(required = false) Long discountId) {
         Order order = orderService.findById(orderId);
-        Bill bill = billService.saveBill(order, discountCode);
+
+        Discount discount = null; // Initialize discount as null
+
+        // Only fetch discount if a discountId is provided
+        if(discountId != null) {
+            discount = discountService.getDiscountById(discountId);
+        }
+
+        Bill bill = billService.saveBill(order, discount);
+
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new BillResponseDTO(bill)));
     }
 
@@ -42,7 +55,11 @@ public class BillController {
         Bill bill = billService.getBillById(id);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new BillResponseDTO(bill)));
     }
-
+    @GetMapping("/getByBillNo/{companyId}/{billNo}")
+    public ResponseEntity<ApiResponse<BillResponseDTO>> getByBillNoAndCompanyId(@PathVariable Long companyId, @PathVariable Long billNo) {
+        Bill bill = billService.findByBillNoAndCompanyId(billNo, companyId);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new BillResponseDTO(bill)));
+    }
     @GetMapping("/getAll/{companyId}")
     public ResponseEntity<ApiResponse<List<BillResponseDTO>>> getAllBills(@PathVariable Long companyId) {
         List<Bill> bills = billService.getAllBills(companyId);

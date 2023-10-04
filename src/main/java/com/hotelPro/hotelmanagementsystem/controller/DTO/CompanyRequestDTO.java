@@ -1,6 +1,11 @@
 package com.hotelPro.hotelmanagementsystem.controller.DTO;
 
+import com.hotelPro.hotelmanagementsystem.model.RestaurantSection;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class CompanyRequestDTO {
    @NotBlank
@@ -21,6 +26,8 @@ public class CompanyRequestDTO {
     private String email;
     private String logoUrl;
     private String taxIdentificationNumber;
+    @NotEmpty
+    private Set<RestaurantSectionDTO> restaurantSections = new HashSet<>();
 
     // Default constructor
     public CompanyRequestDTO() {}
@@ -105,5 +112,29 @@ public class CompanyRequestDTO {
 
     public void setTaxIdentificationNumber(String taxIdentificationNumber) {
         this.taxIdentificationNumber = taxIdentificationNumber;
+    }
+
+    public void setRestaurantSections(Set<RestaurantSectionDTO> restaurantSections) {
+        this.restaurantSections = restaurantSections;
+    }
+
+    public Set<RestaurantSectionDTO> getRestaurantSections() {
+        return restaurantSections;
+    }
+
+    public static class RestaurantSectionDTO {
+        private RestaurantSection.RestaurantType restaurantType;
+
+        public RestaurantSectionDTO() {
+        }
+
+        // Getters and setters
+        public RestaurantSection.RestaurantType getRestaurantType() {
+            return restaurantType;
+        }
+
+        public void setRestaurantType(RestaurantSection.RestaurantType restaurantType) {
+            this.restaurantType = restaurantType;
+        }
     }
 }

@@ -11,7 +11,6 @@ public class ApiResponse<T> {
 
     // getters and setters
 
-
     public int getStatus() {
         return status;
     }

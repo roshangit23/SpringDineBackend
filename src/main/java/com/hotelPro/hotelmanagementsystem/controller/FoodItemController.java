@@ -31,9 +31,14 @@ public class FoodItemController {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new FoodItemResponseDTO(foodItem)));
     }
 
-    @GetMapping("/name/{name}")
-    public ResponseEntity<ApiResponse<FoodItemResponseDTO>> getFoodItemByName(@PathVariable String name) {
-        FoodItem foodItem = foodItemService.findByItemName(name);
+    @GetMapping("/foodItemName/{companyId}/{name}")
+    public ResponseEntity<ApiResponse<FoodItemResponseDTO>> getFoodItemByNameAndCompanyId(@PathVariable Long companyId, @PathVariable String name) {
+        FoodItem foodItem = foodItemService.findByItemNameAndCompanyId(name, companyId);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new FoodItemResponseDTO(foodItem)));
+    }
+    @GetMapping("/foodItemShortCode/{companyId}/{shortCode}")
+    public ResponseEntity<ApiResponse<FoodItemResponseDTO>> getFoodItemByShortCodeAndCompanyId(@PathVariable Long companyId, @PathVariable String shortCode) {
+        FoodItem foodItem = foodItemService.findByShortCodeAndCompanyId(shortCode, companyId);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new FoodItemResponseDTO(foodItem)));
     }
 

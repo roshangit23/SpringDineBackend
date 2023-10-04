@@ -11,9 +11,15 @@ import java.util.*;
 
 @Entity
 @Table(name = "food_items",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"item_name", "company_id"}))
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"item_name", "company_id"}),
+                @UniqueConstraint(columnNames = {"short_code1", "company_id"}),
+                @UniqueConstraint(columnNames = {"short_code2", "company_id"})
+        })
 public class FoodItem implements CompanyAssociatedEntity {
-
+    public enum FoodType {
+        ALCOHOLIC, NON_ALCOHOLIC
+    }
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -30,10 +36,16 @@ public class FoodItem implements CompanyAssociatedEntity {
     @NotBlank
     @Column(name = "type")
     private String type;
+    @Column(nullable = false, columnDefinition = "varchar(255) default 'NON_ALCOHOLIC'")
+    @Enumerated(EnumType.STRING)
+    private FoodType foodType = FoodType.NON_ALCOHOLIC;
     @Size(max = 255)
     @Column(name = "description")
     private String description;
-
+    @Column(name = "short_code1", nullable = true, unique = false)
+    private String shortCode1;
+    @Column(name = "short_code2", nullable = true, unique = false)
+    private String shortCode2;
     @OneToMany(mappedBy = "foodItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<FoodItemOrder> foodItemOrders = new HashSet<>();
 
@@ -53,12 +65,19 @@ public class FoodItem implements CompanyAssociatedEntity {
     public FoodItem() {}
 
     public FoodItem(String itemName, Double itemPrice, String category, String type, String description) {
+        this(itemName, itemPrice, category, type, description, null, null);
+    }
+
+    public FoodItem(String itemName, Double itemPrice, String category, String type, String description, String shortCode1, String shortCode2) {
         this.itemName = itemName;
         this.itemPrice = itemPrice;
         this.category = category;
         this.type = type;
         this.description = description;
+        this.shortCode1 = shortCode1;
+        this.shortCode2 = shortCode2;
     }
+
 // getters and setters...
 
     public Long getId() {
@@ -101,12 +120,36 @@ public class FoodItem implements CompanyAssociatedEntity {
         this.type = type;
     }
 
+    public FoodType getFoodType() {
+        return foodType;
+    }
+
+    public void setFoodType(FoodType foodType) {
+        this.foodType = foodType;
+    }
+
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getShortCode1() {
+        return shortCode1;
+    }
+
+    public void setShortCode1(String shortCode1) {
+        this.shortCode1 = shortCode1;
+    }
+
+    public String getShortCode2() {
+        return shortCode2;
+    }
+
+    public void setShortCode2(String shortCode2) {
+        this.shortCode2 = shortCode2;
     }
 
     public Set<FoodItemOrder> getFoodItemOrders() {

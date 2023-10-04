@@ -1,6 +1,7 @@
 package com.hotelPro.hotelmanagementsystem.controller.DTO;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Set;
 
@@ -8,6 +9,8 @@ public class OrderRequestDTO {
    // private String status;
     @NotBlank
     private String type;
+    @NotNull
+    private Long restaurantSectionId;
     private String comments;
     private Set<FoodItemOrderDTO> foodItemOrders;
     private Long customerId;
@@ -18,9 +21,10 @@ public class OrderRequestDTO {
 
     public OrderRequestDTO() {}
 
-    public OrderRequestDTO(String type, String comments, Integer customer_count, Set<FoodItemOrderDTO> foodItemOrders, Long customerId, Long employeeId) {
+    public OrderRequestDTO(String type,Long restaurantSectionId, String comments, Integer customer_count, Set<FoodItemOrderDTO> foodItemOrders, Long customerId, Long employeeId) {
        // this.status = status;
         this.type = type;
+        this.restaurantSectionId = restaurantSectionId;
         this.comments = comments;
         this.customer_count = customer_count;
         this.foodItemOrders = foodItemOrders;
@@ -42,6 +46,14 @@ public class OrderRequestDTO {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public Long getRestaurantSectionId() {
+        return restaurantSectionId;
+    }
+
+    public void setRestaurantSectionId(Long restaurantSectionId) {
+        this.restaurantSectionId = restaurantSectionId;
     }
 
     public String getComments() {

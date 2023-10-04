@@ -2,9 +2,7 @@ package com.hotelPro.hotelmanagementsystem.service.impl;
 
 import com.hotelPro.hotelmanagementsystem.exception.CustomException;
 import com.hotelPro.hotelmanagementsystem.exception.ResourceNotFoundException;
-import com.hotelPro.hotelmanagementsystem.model.Bill;
-import com.hotelPro.hotelmanagementsystem.model.Discount;
-import com.hotelPro.hotelmanagementsystem.model.Order;
+import com.hotelPro.hotelmanagementsystem.model.*;
 import com.hotelPro.hotelmanagementsystem.repository.BillRepository;
 import com.hotelPro.hotelmanagementsystem.repository.CompanyRepository;
 import com.hotelPro.hotelmanagementsystem.repository.OrderRepository;
@@ -12,6 +10,7 @@ import com.hotelPro.hotelmanagementsystem.service.BillService;
 import com.hotelPro.hotelmanagementsystem.service.CustomerService;
 import com.hotelPro.hotelmanagementsystem.service.DiscountService;
 import com.hotelPro.hotelmanagementsystem.service.OrderService;
+import com.hotelPro.hotelmanagementsystem.util.GSTCalculator;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,22 +40,42 @@ public class BillServiceImpl implements BillService {
     private CompanyRepository companyRepository;
     @Override
     @Transactional
-    public Bill saveBill(Order order,String discountCode) {
-//        Company company = companyRepository.findById(companyId)
-//                .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId));
+    public Bill saveBill(Order order,Discount discount) {
 
         if(order.getStatus()== Order.Status.IN_PROGRESS || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
             throw new CustomException("Bill cannot be created for orders which are in progress or removed", HttpStatus.BAD_REQUEST);
         }
         double amount = orderService.calculateTotal(order);
         // If a discount code is provided, look up the corresponding discount and apply it
-        if (discountCode != null) {
-            Discount discount = discountService.getDiscountByCode(discountCode);
+        if (discount != null) {
             double discountAmount = orderService.calculateDiscount(order, discount);
             amount -= discountAmount; // Subtract the discount amount from the total
         }
-      //  Set<Bill.PaymentMode> paymentModeSet = new HashSet<>(Arrays.asList(Bill.PaymentMode.CARD));
         Bill bill = new Bill(order, amount);
+
+        RestaurantSection.RestaurantType restaurantType = order.getRestaurantSection().getRestaurantType();
+        if (restaurantType != RestaurantSection.RestaurantType.NO_GST) {  // Check if GST should be applied
+            double gstAmount = 0.0;
+            for (FoodItemOrder foodItemOrder : order.getFoodItemOrders()) {
+                FoodItem.FoodType foodType = foodItemOrder.getFoodItem().getFoodType();
+                double itemAmount = foodItemOrder.getFoodItem().getItemPrice() * foodItemOrder.getQuantity();
+                gstAmount += GSTCalculator.calculateGST(itemAmount, restaurantType, foodType);  // Accumulate GST amount
+            }
+            double cgst = gstAmount / 2;
+            double sgst = gstAmount / 2;
+
+            bill.setCgst(cgst);
+            bill.setSgst(sgst);
+            bill.setTotalAmount(amount + gstAmount);  // Set total amount including GST
+        } else {
+            bill.setTotalAmount(amount);  // Set total amount without GST as NO_GST is applied
+            bill.setCgst(0.0);
+            bill.setSgst(0.0);
+        }
+
+        bill.setCompany(order.getCompany());
+        Long lastBillNo = billRepository.findMaxBillNoByCompany(order.getCompany().getId());
+        bill.setBillNo(lastBillNo == null ? 1 : lastBillNo + 1);
 
         // If the order type is DELIVERY, then customer details are mandatory
         if (order.getType() == Order.OrderType.DELIVERY) {
@@ -73,7 +92,6 @@ public class BillServiceImpl implements BillService {
         if(order.getRestaurantTable()!=null){
             bill.setRestaurantTable(order.getRestaurantTable());
         }
-        bill.setCompany(order.getCompany());
         return billRepository.save(bill);
     }
 
@@ -96,6 +114,17 @@ public class BillServiceImpl implements BillService {
     public void deleteBill(Long id) {
         Bill bill = billRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill", "id", id));
+
+        // If you have a bidirectional relationship, disassociate both sides
+        Order order = bill.getOrder();
+        if(order != null) {
+            order.setBill(null); // disassociate Order from Bill
+            // Optionally save the order if needed, depending on your JPA settings
+            // orderRepository.save(order);
+        }
+
+        bill.setOrder(null); // disassociate Bill from Order
+
         billRepository.deleteById(id);
     }
 
@@ -112,18 +141,18 @@ public class BillServiceImpl implements BillService {
             if (bill.getCustomer() == null) {
                 throw new CustomException("Customer details are mandatory when payment mode is DUE.", HttpStatus.BAD_REQUEST);
             }
-            if (totalPaid < bill.getAmount()) {
+            if (totalPaid < bill.getTotalAmount()) {
                 throw new CustomException("The total payment including DUE is less than the bill amount", HttpStatus.BAD_REQUEST);
-            } else if (totalPaid > bill.getAmount()) {
+            } else if (totalPaid > bill.getTotalAmount()) {
                 throw new CustomException("The total payment including DUE is more than the bill amount", HttpStatus.BAD_REQUEST);
             }
             customerService.saveCustomerForBill(bill.getCustomer(), Bill.PaymentMode.DUE);
             double dueAmount = paymentModes.get(Bill.PaymentMode.DUE);
             bill.setDueAmount(dueAmount);
             bill.setStatus(Bill.BillStatus.NOT_SETTLED);
-        } else if (totalPaid < bill.getAmount()) {
+        } else if (totalPaid < bill.getTotalAmount()) {
             throw new CustomException("The total payment is less than the bill amount", HttpStatus.BAD_REQUEST);
-        } else if (totalPaid > bill.getAmount()) {
+        } else if (totalPaid > bill.getTotalAmount()) {
             throw new CustomException("The total payment is more than the bill amount", HttpStatus.BAD_REQUEST);
         } else {
             bill.setDueAmount(null);
@@ -133,6 +162,12 @@ public class BillServiceImpl implements BillService {
         Set<Bill.PaymentMode> paymentModesSet = new HashSet<>(paymentModes.keySet());
         bill.setPaymentMode(paymentModesSet);
         return billRepository.save(bill);
+    }
+
+    @Transactional
+    public Bill findByBillNoAndCompanyId(Long billNo, Long companyId) {
+        return billRepository.findByBillNoAndCompanyId(billNo, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bill", "Bill No", billNo));
     }
 
 }

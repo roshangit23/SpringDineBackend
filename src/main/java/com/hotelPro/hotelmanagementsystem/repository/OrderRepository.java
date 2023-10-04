@@ -21,4 +21,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByCompany_IdAndStatus(Long companyId, Order.Status status);
 
     List<Order> findByCompany_IdAndType(Long companyId, Order.OrderType orderType);
+    @Query("SELECT MAX(o.orderNo) FROM Order o WHERE o.company.id = :companyId")
+    Long findMaxOrderNoByCompany(@Param("companyId") Long companyId);
+
+    Optional<Order> findByOrderNoAndCompanyId(Long orderNo, Long companyId);
 }

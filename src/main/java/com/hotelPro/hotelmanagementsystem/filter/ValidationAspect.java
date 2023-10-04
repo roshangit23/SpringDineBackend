@@ -47,11 +47,15 @@ public class ValidationAspect {
     public void validateOrder(JoinPoint joinPoint, OrderRequestDTO orderRequest) {
         // Extract companyIds based on user role
         List<Long> companyIdsForUser = getCompanyIdsForUser();
+        System.out.println("companyIdsForUser "+companyIdsForUser);
+       //System.out.println("companyIdsForUser element type: " + companyIdsForUser.get(0).getClass().getName());
         if (orderRequest.getFoodItemOrders() != null || !orderRequest.getFoodItemOrders().isEmpty()) {
             for (FoodItemOrderDTO foodItemOrderDTO : orderRequest.getFoodItemOrders()) {
                 if (foodItemOrderDTO != null && foodItemOrderDTO.getFoodItemId() != null) {
                     FoodItem foodItem = foodItemService.getFoodItemById(foodItemOrderDTO.getFoodItemId());
                     if (foodItem != null && !companyIdsForUser.contains(foodItem.getCompany().getId())) {
+                        System.out.println("foodItem.getCompany().getId() "+foodItem.getCompany().getId());
+                        System.out.println("FoodItem Company Id Type: " + foodItem.getCompany().getId().getClass().getName());
                         throw new CustomException("Unauthorized access to company data", HttpStatus.FORBIDDEN);
                     }
                 }

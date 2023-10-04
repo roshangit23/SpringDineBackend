@@ -6,6 +6,7 @@ import com.hotelPro.hotelmanagementsystem.exception.InvalidEnumValueException;
 import com.hotelPro.hotelmanagementsystem.exception.ResourceNotFoundException;
 import com.hotelPro.hotelmanagementsystem.model.Company;
 import com.hotelPro.hotelmanagementsystem.model.RefreshToken;
+import com.hotelPro.hotelmanagementsystem.model.RestaurantSection;
 import com.hotelPro.hotelmanagementsystem.model.User;
 import com.hotelPro.hotelmanagementsystem.repository.CompanyRepository;
 import com.hotelPro.hotelmanagementsystem.repository.UserRepository;
@@ -14,6 +15,7 @@ import com.hotelPro.hotelmanagementsystem.service.CustomUserDetails;
 import com.hotelPro.hotelmanagementsystem.service.MyUserDetailsService;
 import com.hotelPro.hotelmanagementsystem.service.RefreshTokenService;
 import com.hotelPro.hotelmanagementsystem.util.JwtTokenProvider;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -82,6 +84,7 @@ public class AuthServiceImpl implements AuthService {
         return new JwtResponse(jwt, refreshToken.getToken(), customUserDetails.getId(), customUserDetails.getUsername(), customUserDetails.getEmail(), customUserDetails.getMobileNumber(), roles, companyName);
     }
     @Override
+    @Transactional
     public String registerUser(UserRequestDTO userRequestDTO, String token) throws Exception {
         Company company = companyRepository.findById(userRequestDTO.getCompanyId())
                 .orElseThrow(() -> new CustomException("Company not found", HttpStatus.BAD_REQUEST));
@@ -229,6 +232,11 @@ public class AuthServiceImpl implements AuthService {
             company.setTaxIdentificationNumber(companyDTO.getTaxIdentificationNumber());
         }
 
+        for (CompanyRequestDTO.RestaurantSectionDTO sectionDTO : companyDTO.getRestaurantSections()) {
+            RestaurantSection section = new RestaurantSection();
+            section.setRestaurantType(sectionDTO.getRestaurantType());
+            company.getRestaurantSections().add(section);
+        }
 
         companyRepository.save(company);
 

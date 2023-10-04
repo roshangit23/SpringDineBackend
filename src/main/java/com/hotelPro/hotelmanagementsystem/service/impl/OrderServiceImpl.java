@@ -38,7 +38,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private InventoryRepository inventoryRepository;
-
+    @Autowired
+    private RestaurantSectionRepository restaurantSectionRepository;
     @Autowired
     private BillRepository billRepository;
     @Autowired
@@ -57,6 +58,27 @@ public class OrderServiceImpl implements OrderService {
 
     private Order convertToEntity(OrderRequestDTO orderRequestDTO, Company company) {
         Order order = new Order();
+        order.setCompany(company);
+        // Generate unique orderNo for the order within the company
+        Long lastOrderNo = orderRepository.findMaxOrderNoByCompany(company.getId());
+        order.setOrderNo(lastOrderNo == null ? 1 : lastOrderNo + 1);
+
+        // Handle the restaurantSectionId field
+        if(orderRequestDTO.getRestaurantSectionId() != null) {
+            // Fetch the RestaurantSection entity from the database
+            RestaurantSection restaurantSection = restaurantSectionRepository.findById(orderRequestDTO.getRestaurantSectionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("RestaurantSection", "id", orderRequestDTO.getRestaurantSectionId()));
+
+            // Check if the restaurantSection is associated with the order's company
+            if(!restaurantSection.getCompanies().contains(company)) {
+                throw new CustomException("The provided restaurant section does not belong to the order's company", HttpStatus.BAD_REQUEST);
+            }
+
+            order.setRestaurantSection(restaurantSection);
+        } else {
+            throw new CustomException("Restaurant section is mandatory", HttpStatus.BAD_REQUEST);
+        }
+
         if(orderRequestDTO.getComments()!=null){
             order.setComments(orderRequestDTO.getComments());
         }
@@ -102,7 +124,6 @@ public class OrderServiceImpl implements OrderService {
             order.setFoodItemOrders(new HashSet<>());
         }
         order.setStartTime(LocalDateTime.now());  // Set the start time for new orders
-        order.setCompany(company);
         return order;
     }
 
@@ -122,6 +143,22 @@ public class OrderServiceImpl implements OrderService {
                 throw new InvalidEnumValueException("type", "Invalid value for type");
             }
         }
+        Company company = order.getCompany();
+        // Handle the restaurantSectionId field
+        if(orderRequestDTO.getRestaurantSectionId() != null) {
+            // Fetch the RestaurantSection entity from the database
+            RestaurantSection restaurantSection = restaurantSectionRepository.findById(orderRequestDTO.getRestaurantSectionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("RestaurantSection", "id", orderRequestDTO.getRestaurantSectionId()));
+
+            // Check if the restaurantSection is associated with the order's company
+            if(!restaurantSection.getCompanies().contains(company)) {
+                throw new CustomException("The provided restaurant section does not belong to the order's company", HttpStatus.BAD_REQUEST);
+            }
+
+            order.setRestaurantSection(restaurantSection);
+        } else {
+            throw new CustomException("Restaurant section is mandatory", HttpStatus.BAD_REQUEST);
+        }
 
         // For customerId and employeeId we can't set directly to the order
         // we need to fetch the corresponding Customer and Employee entities from the database
@@ -137,7 +174,7 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", orderRequestDTO.getEmployeeId()));
             order.setAssignedEmployee(employee);
         }
-        Company company = order.getCompany();
+
         // Set<FoodItemOrder> requires a bit more complex handling
         // As we can't just set DTO fields into entity
         // We should create new FoodItemOrder entities with appropriate links
@@ -224,7 +261,12 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId));
         //return saveOrder(orderRequestDTO,orderId, null);
       Order order = convertToEntity(orderRequestDTO,company);
-        return order;
+        if (order.getFoodItemOrders() != null) {
+            for (FoodItemOrder foodItemOrder : order.getFoodItemOrders()) {
+                foodItemOrder.setOrder(order);  // Explicitly set the Order in the FoodItemOrder
+            }
+        }
+        return orderRepository.save(order);
     }
     @Override
     @Transactional
@@ -308,11 +350,11 @@ public class OrderServiceImpl implements OrderService {
     public void deleteOrder(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
-//        if(order.getStatus()== Order.Status.IN_PROGRESS || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
+//        if(order.getStatus()== Order.Status.COMPLETED || order.getStatus()== Order.Status.MERGED || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
 //            throw new CustomException("Order cannot be deleted once order is completed, merged or removed", HttpStatus.BAD_REQUEST);
 //        }
-        if(order.getStatus()== Order.Status.COMPLETED || order.getStatus()== Order.Status.MERGED || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
-            throw new CustomException("Order cannot be deleted once order is completed, merged or removed", HttpStatus.BAD_REQUEST);
+        if(order.getBill()!=null){
+            throw new CustomException("Order cannot be deleted once Bill is created for order", HttpStatus.BAD_REQUEST);
         }
         orderRepository.deleteById(id);
     }
@@ -745,6 +787,12 @@ public Set<FoodItemOrder> getAllFoodItemOrdersByCompanyId(Long companyId) {
     public FoodItemOrderDetail getFoodItemOrderDetailById(Long foodItemOrderDetailId) {
         return foodItemOrderDetailRepository.findById(foodItemOrderDetailId)
                 .orElseThrow(() -> new ResourceNotFoundException("FoodItemOrderDetail", "id", foodItemOrderDetailId));
+    }
+
+    @Transactional
+    public Order findByOrderNoAndCompanyId(Long orderNo, Long companyId) {
+        return orderRepository.findByOrderNoAndCompanyId(orderNo, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "Order No", orderNo));
     }
 
 }

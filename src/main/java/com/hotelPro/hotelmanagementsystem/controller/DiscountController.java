@@ -57,10 +57,10 @@ public class DiscountController {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Discount deleted successfully"));
     }
 
-    @GetMapping("/calculateDiscountedTotal/{orderId}/{discountCode}")
-    public ResponseEntity<ApiResponse<Double>> calculateDiscountedTotal(@PathVariable Long orderId, @PathVariable String discountCode) {
+    @GetMapping("/calculateDiscountedTotal/{orderId}/{discountId}")
+    public ResponseEntity<ApiResponse<Double>> calculateDiscountedTotal(@PathVariable Long orderId, @PathVariable Long discountId) {
         Order order = orderService.findById(orderId);
-        Discount discount = discountService.getDiscountByCode(discountCode);
+        Discount discount = discountService.getDiscountById(discountId);
         double discountedTotal = discountService.calculateDiscountedTotal(order, discount);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), discountedTotal));
     }

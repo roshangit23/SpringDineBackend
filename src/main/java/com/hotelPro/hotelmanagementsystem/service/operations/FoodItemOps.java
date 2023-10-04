@@ -26,11 +26,11 @@ public class FoodItemOps {
     }
 
     // 3) Get food item by name
-    public void getFoodItemByName(String itemName) {
-        FoodItem foodItem = foodItemService.findByItemName(itemName);
-        System.out.println("FoodItem by name: " + foodItem);
-        System.out.println("Done!");
-    }
+//    public void getFoodItemByName(String itemName) {
+//        FoodItem foodItem = foodItemService.findByItemName(itemName);
+//        System.out.println("FoodItem by name: " + foodItem);
+//        System.out.println("Done!");
+//    }
 
     // 4) Get food item by id
     public void getFoodItemById(Long id) {
