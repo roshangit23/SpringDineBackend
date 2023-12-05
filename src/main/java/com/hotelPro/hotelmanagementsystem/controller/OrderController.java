@@ -98,8 +98,9 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteOrder(@PathVariable Long id) {
-        orderService.deleteOrder(id);
+    public ResponseEntity<ApiResponse<String>> deleteOrder(@PathVariable Long id, @Valid @RequestBody DeleteBillRequest request) {
+        String comments = request.getComments();
+        orderService.deleteOrder(id,comments);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Order deleted successfully"));
     }
 
@@ -162,6 +163,11 @@ public class OrderController {
                 .map(FoodItemOrderResponseDTO::new)
                 .collect(Collectors.toSet());
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTOs));
+    }
+    @GetMapping("/foodItemOrderById/{foodItemOrderId}")
+    public ResponseEntity<ApiResponse<FoodItemOrderResponseDTO>> getAllFoodItemOrdersByfoodItemOrderId(@PathVariable Long foodItemOrderId) {
+        FoodItemOrder foodItemOrder = orderService.getFoodItemOrderById(foodItemOrderId);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new FoodItemOrderResponseDTO(foodItemOrder)));
     }
 
     @GetMapping("/foodItemOrdersByStatus/{companyId}/{status}")
@@ -228,7 +234,6 @@ public class OrderController {
         DurationResponseDTO responseDTO = new DurationResponseDTO("FoodItemOrderDetail duration: " + durationInMinutes + " minutes", durationInMinutes);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), responseDTO));
     }
-
 
 }
 

@@ -141,6 +141,9 @@ public FoodItem findByItemNameAndCompanyId(String itemName, Long companyId) {
         if (foodItemDetails.getType() != null && !foodItemDetails.getType().isEmpty()) {
             foodItem.setType(foodItemDetails.getType());
         }
+        if (foodItemDetails.getFoodType() != null) {
+            foodItem.setFoodType(foodItemDetails.getFoodType());
+        }
         // Updating shortCode1
         if (foodItemDetails.getShortCode1() != null && !foodItemDetails.getShortCode1().trim().isEmpty()) {
             foodItem.setShortCode1(foodItemDetails.getShortCode1());
@@ -183,6 +186,11 @@ public FoodItem findByItemNameAndCompanyId(String itemName, Long companyId) {
     public FoodItem findByShortCodeAndCompanyId(String shortCode, Long companyId) {
         return foodItemRepository.findByShortCode1OrShortCode2AndCompanyId(shortCode, shortCode, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("FoodItem", "short Code", shortCode));
+    }
+    @Override
+    @Transactional
+    public List<FoodItem> searchFoodItems(Long companyId, String query) {
+        return foodItemRepository.findByItemNameContainingOrShortCode1ContainingOrShortCode2ContainingAndCompanyId(query, query,query, companyId);
     }
 
 }

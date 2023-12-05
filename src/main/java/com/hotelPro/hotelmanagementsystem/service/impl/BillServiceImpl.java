@@ -3,6 +3,7 @@ package com.hotelPro.hotelmanagementsystem.service.impl;
 import com.hotelPro.hotelmanagementsystem.exception.CustomException;
 import com.hotelPro.hotelmanagementsystem.exception.ResourceNotFoundException;
 import com.hotelPro.hotelmanagementsystem.model.*;
+import com.hotelPro.hotelmanagementsystem.repository.BillAuditRepository;
 import com.hotelPro.hotelmanagementsystem.repository.BillRepository;
 import com.hotelPro.hotelmanagementsystem.repository.CompanyRepository;
 import com.hotelPro.hotelmanagementsystem.repository.OrderRepository;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +40,9 @@ public class BillServiceImpl implements BillService {
 
     @Autowired
     private CompanyRepository companyRepository;
+
+    @Autowired
+    private BillAuditRepository billAuditRepository;
     @Override
     @Transactional
     public Bill saveBill(Order order,Discount discount) {
@@ -51,8 +56,10 @@ public class BillServiceImpl implements BillService {
             double discountAmount = orderService.calculateDiscount(order, discount);
             amount -= discountAmount; // Subtract the discount amount from the total
         }
-        Bill bill = new Bill(order, amount);
-
+        Bill bill = new Bill(order, Double.parseDouble(String.format("%.2f", amount)));
+        if (discount != null) {
+            bill.setDiscount(discount);
+        }
         RestaurantSection.RestaurantType restaurantType = order.getRestaurantSection().getRestaurantType();
         if (restaurantType != RestaurantSection.RestaurantType.NO_GST) {  // Check if GST should be applied
             double gstAmount = 0.0;
@@ -64,11 +71,12 @@ public class BillServiceImpl implements BillService {
             double cgst = gstAmount / 2;
             double sgst = gstAmount / 2;
 
-            bill.setCgst(cgst);
-            bill.setSgst(sgst);
-            bill.setTotalAmount(amount + gstAmount);  // Set total amount including GST
+            bill.setCgst(Double.parseDouble(String.format("%.2f", cgst)));
+            bill.setSgst(Double.parseDouble(String.format("%.2f", sgst)));
+            bill.setTotalAmount(Double.parseDouble(String.format("%.2f", amount + gstAmount)));
+            // Set total amount including GST
         } else {
-            bill.setTotalAmount(amount);  // Set total amount without GST as NO_GST is applied
+            bill.setTotalAmount(Double.parseDouble(String.format("%.2f", amount)));  // Set total amount without GST as NO_GST is applied
             bill.setCgst(0.0);
             bill.setSgst(0.0);
         }
@@ -109,18 +117,31 @@ public class BillServiceImpl implements BillService {
         //return billRepository.findAll();
     }
 
-    @Override
     @Transactional
-    public void deleteBill(Long id) {
+    @Override
+    public void deleteBill(Long id, String comments) {
         Bill bill = billRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill", "id", id));
+
+        // Copy data from Bill to BillAudit
+        BillAudit billAudit = new BillAudit();
+        billAudit.setBillNo(bill.getBillNo());
+        billAudit.setAmount(bill.getAmount());
+        billAudit.setCgst(bill.getCgst());
+        billAudit.setSgst(bill.getSgst());
+        billAudit.setTotalAmount(bill.getTotalAmount());
+        billAudit.setDueAmount(bill.getDueAmount());
+        billAudit.setStatus(bill.getStatus());
+        billAudit.setPaymentMode(bill.getPaymentMode());
+        billAudit.setBillCreatedTime(bill.getBillCreatedTime());
+        billAudit.setDeletedAt(LocalDateTime.now());
+        billAudit.setComments(comments);
+        billAuditRepository.save(billAudit);
 
         // If you have a bidirectional relationship, disassociate both sides
         Order order = bill.getOrder();
         if(order != null) {
             order.setBill(null); // disassociate Order from Bill
-            // Optionally save the order if needed, depending on your JPA settings
-            // orderRepository.save(order);
         }
 
         bill.setOrder(null); // disassociate Bill from Order
@@ -146,7 +167,7 @@ public class BillServiceImpl implements BillService {
             } else if (totalPaid > bill.getTotalAmount()) {
                 throw new CustomException("The total payment including DUE is more than the bill amount", HttpStatus.BAD_REQUEST);
             }
-            customerService.saveCustomerForBill(bill.getCustomer(), Bill.PaymentMode.DUE);
+            customerService.saveCustomerForBill(bill.getCustomer(), Bill.PaymentMode.DUE,bill.getCompany().getId());
             double dueAmount = paymentModes.get(Bill.PaymentMode.DUE);
             bill.setDueAmount(dueAmount);
             bill.setStatus(Bill.BillStatus.NOT_SETTLED);

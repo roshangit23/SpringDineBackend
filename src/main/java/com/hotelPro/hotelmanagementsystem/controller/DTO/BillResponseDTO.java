@@ -1,9 +1,11 @@
 package com.hotelPro.hotelmanagementsystem.controller.DTO;
 
 import com.hotelPro.hotelmanagementsystem.model.Bill;
+import com.hotelPro.hotelmanagementsystem.model.RestaurantSection;
 
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class BillResponseDTO {
 
@@ -21,7 +23,8 @@ public class BillResponseDTO {
     private LocalDateTime billCreatedTime;
     private Long customerId;
     private String customerName; // Assuming the Customer class has a name attribute
-
+    private Long discountId;
+    private Set<RestaurantSection.RestaurantType> restaurantType;
     // Constructor
     public BillResponseDTO(Bill bill) {
         this.id = bill.getId();
@@ -43,10 +46,15 @@ public class BillResponseDTO {
         if(bill.getCustomer() != null) {
             this.customerId = bill.getCustomer().getId();
         }
-
+        if(bill.getDiscount() != null) {
+            this.discountId = bill.getDiscount().getId();
+        }
         if(bill.getDueAmount()!=null){
             this.dueAmount = bill.getDueAmount();
         }
+        this.restaurantType = bill.getCompany().getRestaurantSections().stream()
+                .map(RestaurantSection::getRestaurantType)
+                .collect(Collectors.toSet());
     }
 
     // Getters and setters
@@ -73,6 +81,14 @@ public class BillResponseDTO {
 
     public void setOrderId(Long orderId) {
         this.orderId = orderId;
+    }
+
+    public Long getDiscountId() {
+        return discountId;
+    }
+
+    public void setDiscountId(Long discountId) {
+        this.discountId = discountId;
     }
 
     public double getAmount() {
@@ -154,5 +170,12 @@ public class BillResponseDTO {
         this.customerId = customerId;
     }
 
+    public Set<RestaurantSection.RestaurantType> getRestaurantTypes() {
+        return restaurantType;
+    }
+
+    public void setRestaurantTypes(Set<RestaurantSection.RestaurantType> restaurantTypes) {
+        this.restaurantType = restaurantTypes;
+    }
 }
 

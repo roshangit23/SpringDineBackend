@@ -1,12 +1,14 @@
 package com.hotelPro.hotelmanagementsystem.controller;
 
 import com.hotelPro.hotelmanagementsystem.controller.DTO.BillResponseDTO;
+import com.hotelPro.hotelmanagementsystem.controller.DTO.DeleteBillRequest;
 import com.hotelPro.hotelmanagementsystem.model.Bill;
 import com.hotelPro.hotelmanagementsystem.model.Discount;
 import com.hotelPro.hotelmanagementsystem.model.Order;
 import com.hotelPro.hotelmanagementsystem.service.BillService;
 import com.hotelPro.hotelmanagementsystem.service.DiscountService;
 import com.hotelPro.hotelmanagementsystem.service.OrderService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,8 +70,9 @@ public class BillController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteBill(@PathVariable Long id) {
-        billService.deleteBill(id);
+    public ResponseEntity<ApiResponse<String>> deleteBill(@PathVariable Long id, @Valid @RequestBody DeleteBillRequest request) {
+        String comments = request.getComments();
+        billService.deleteBill(id, comments);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Bill deleted successfully"));
     }
 }

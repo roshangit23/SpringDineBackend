@@ -52,27 +52,36 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
     @Override
     @Transactional
     public RestaurantTable createOrderForTable(Long tableId) {
-//        Company company = companyRepository.findById(companyId)
-//                .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId));
+        // Fetch the table and check its availability
         RestaurantTable table = restaurantTableRepository.findById(tableId)
                 .orElseThrow(() -> new ResourceNotFoundException("Table", "id", tableId));
         if (table.getStatus() != RestaurantTable.TableStatus.FREE) {
             throw new CustomException("Table is not free, please select another table.", HttpStatus.CONFLICT);
         }
+
+        // Create a new order
         Order order = new Order();
         order.setCompany(table.getCompany());
-        // Generate unique orderNo for the order within the company
-        Long lastOrderNo = orderRepository.findMaxOrderNoByCompany(table.getCompany().getId());
-        order.setOrderNo(lastOrderNo == null ? 1 : lastOrderNo + 1);
 
+        // Synchronized block to handle concurrent requests
+        synchronized (this) {
+            Long lastOrderNo = orderRepository.findMaxOrderNoByCompany(table.getCompany().getId());
+            order.setOrderNo(lastOrderNo == null ? 1 : lastOrderNo + 1);
+        }
+
+        // Set properties of the order
         order.setStatus(Order.Status.IN_PROGRESS);
         order.setStartTime(LocalDateTime.now());
         order.setType(Order.OrderType.DINE_IN);
-        table.setCurrentOrder(order);
-       // order.setRestaurantTable(table);
-        table.setStatus(RestaurantTable.TableStatus.OCCUPIED);
+        order.setRestaurantTable(table); // Link the order to the table
 
-      return restaurantTableRepository.save(table);
+        // Save the order
+        order = orderRepository.save(order);
+
+        // Update and save the table status
+        table.setCurrentOrder(order);
+        table.setStatus(RestaurantTable.TableStatus.OCCUPIED);
+        return restaurantTableRepository.save(table);
     }
 
     @Override
@@ -80,21 +89,25 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
     public List<RestaurantTable> checkAndFreeTablesIfEmpty(Long companyId) {
         // Only fetch tables that have a current order and belong to the specified companyId
         List<RestaurantTable> tables = restaurantTableRepository.findByCurrentOrderIsNotNullAndCompanyId(companyId);
+        List<RestaurantTable> freedTables = new ArrayList<>(); // List to store tables that have been freed
+
         for (RestaurantTable table : tables) {
             Order order = table.getCurrentOrder();
             if (order.getStatus() == Order.Status.IN_PROGRESS && order.getFoodItemOrders().isEmpty()) {
                 order.setStatus(Order.Status.REMOVED_WITHOUT_CREATING);
                 order.setEndTime(LocalDateTime.now());
                 orderRepository.save(order);
+
                 table.setStatus(RestaurantTable.TableStatus.FREE);
                 table.setCurrentOrder(null);
+                restaurantTableRepository.save(table); // Save the updated table status
+
+                freedTables.add(table); // Add the table to the list of freed tables
             }
         }
 
-        return tables;
+        return freedTables; // Return only the tables that have been freed
     }
-
-
 
     @Override
     @Transactional
@@ -140,8 +153,10 @@ public RestaurantTable freeTable(Long tableId) {
     Bill currentBill = billRepository.findFirstByRestaurantTableOrderByBillCreatedTimeDesc(table);
     if(currentOrder != null){
     if(currentOrder.getStatus() == Order.Status.MERGED || currentOrder.getStatus() == Order.Status.COMPLETED) {
-       if (currentBill == null || (currentBill.getStatus() != Bill.BillStatus.SETTLED && currentBill.getStatus() != Bill.BillStatus.NOT_SETTLED)) {
+       if (currentBill != null){
+           if (currentBill.getStatus() != Bill.BillStatus.SETTLED && currentBill.getStatus() != Bill.BillStatus.NOT_SETTLED) {
            throw new CustomException("The current bill must be SETTLED or NOT_SETTLED to free the table.", HttpStatus.BAD_REQUEST);
+       }
        }
      }
     }
@@ -256,6 +271,19 @@ public double mergeOrders(List<Long> tableIds) {
     @Transactional
     public List<RestaurantTable> getAllTables(Long companyId) {
         return restaurantTableRepository.findByCompanyId(companyId);
+    }
+    @Override
+    @Transactional
+    public RestaurantTable findByTableNumberCategoryAndCompanyId(Integer tableNumber, String category,Long companyId) {
+        // Update the method to also search by companyId
+        return restaurantTableRepository.findByTableNumberAndCategoryAndCompanyId(tableNumber,category, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("RestaurantTable", "tableNumber and category", tableNumber+ " "+category));
+    }
+    @Override
+    @Transactional
+    public void deleteRestaurantTable(Long id) {
+        RestaurantTable restaurantTable = getTableById(id);
+        restaurantTableRepository.delete(restaurantTable);
     }
 
 }

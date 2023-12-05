@@ -399,9 +399,15 @@ public class EntityServiceResolver {
                     entities.add(order);
                 }
             }
-
+            else if (path.matches("/orders/foodItemOrderById/\\d+")) {
+                Long foodItemOrderId = extractIdFromPath(path, 3);
+                FoodItemOrder foodItemOrder = orderService.getFoodItemOrderById(foodItemOrderId);
+                if (foodItemOrder != null) {
+                    entities.add(foodItemOrder);
+                }
+            }
             // Pattern to match /foodItemOrder/duration/{orderId}/{foodItemId}
-            if (path.matches("/orders/foodItemOrder/duration/\\d+/\\d+")) {
+           else if (path.matches("/orders/foodItemOrder/duration/\\d+/\\d+")) {
                 Long orderId = extractIdFromPath(path, 4);
                 Long foodItemId = extractIdFromPath(path, 5);
                 Order order = orderService.getOrderById(orderId);

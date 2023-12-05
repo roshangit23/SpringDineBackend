@@ -35,11 +35,13 @@ public class JwtTokenProvider {
     private UserDetailsService userDetailsService;
     @Autowired
     private UserRepository userRepository;
-    public String createToken(String username, Long companyId) {
+    public String createToken(String username, Long companyId, String planName, long daysRemaining) {
         Claims claims = Jwts.claims().setSubject(username);
         claims.put("companyId", companyId);
         List<String> roles = getRolesByUsername(username);  // Fetch roles based on username
         claims.put("roles", roles);  // Add roles to the token
+        claims.put("planName", planName);
+        claims.put("planValidity", daysRemaining);
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
@@ -162,7 +164,5 @@ public class JwtTokenProvider {
                 .signWith(SignatureAlgorithm.HS256, secretKey)
                 .compact();
     }
-
-
 }
 

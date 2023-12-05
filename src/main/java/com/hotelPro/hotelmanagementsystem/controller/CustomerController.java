@@ -39,7 +39,11 @@ public class CustomerController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), customerResponseDTOs));
     }
-
+    @GetMapping("/getByCustomerNo/{companyId}/{customerNo}")
+    public ResponseEntity<ApiResponse<CustomerResponseDTO>> getCustomerByCustomerNoAndCompanyId(@PathVariable Long companyId, @PathVariable Long customerNo) {
+        Customer customer = customerService.findByCustomerNoAndCompanyId(customerNo, companyId);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new CustomerResponseDTO(customer)));
+    }
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<CustomerResponseDTO>> updateCustomer(@PathVariable Long id, @RequestBody Customer customerDetails) {
         Customer updatedCustomer = customerService.updateCustomer(id, customerDetails);
@@ -51,5 +55,12 @@ public class CustomerController {
         customerService.deleteCustomer(id);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Customer deleted successfully"));
     }
+
+    @GetMapping("/getByPhoneNumber/{companyId}/{phoneNumber}")
+    public ResponseEntity<ApiResponse<CustomerResponseDTO>> getCustomerByPhoneNumberAndCompanyId(@PathVariable Long companyId, @PathVariable String phoneNumber) {
+        Customer customer = customerService.findByPhoneNumberAndCompanyId(phoneNumber, companyId);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new CustomerResponseDTO(customer)));
+    }
+
 }
 

@@ -1,6 +1,7 @@
 package com.hotelPro.hotelmanagementsystem.service;
 
 import com.hotelPro.hotelmanagementsystem.model.Company;
+import com.hotelPro.hotelmanagementsystem.model.Subscription;
 import com.hotelPro.hotelmanagementsystem.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -75,6 +76,9 @@ public class CustomUserDetails implements UserDetails {
     public List<Company> getCompanies() {
         return new ArrayList<>(user.getCompanies());
         // return user.getCompanies().stream().collect(Collectors.toList());
+    }
+    public Subscription getSubscription() {
+        return user.getCompany().getSubscription();
     }
 
 }

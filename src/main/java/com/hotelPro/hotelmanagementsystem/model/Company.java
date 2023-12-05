@@ -40,6 +40,9 @@ public class Company {
             inverseJoinColumns = @JoinColumn(name = "restaurant_section_id")
     )
     private Set<RestaurantSection> restaurantSections = new HashSet<>();
+
+    @OneToOne(mappedBy = "company", cascade = CascadeType.ALL)
+    private Subscription subscription;
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL)
     private List<User> users;
 
@@ -173,6 +176,13 @@ public class Company {
         user.getCompanies().remove(this);
     }
 
+    public Subscription getSubscription() {
+        return subscription;
+    }
+
+    public void setSubscription(Subscription subscription) {
+        this.subscription = subscription;
+    }
 
 }
 

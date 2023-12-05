@@ -3,6 +3,8 @@ package com.hotelPro.hotelmanagementsystem.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hotelPro.hotelmanagementsystem.exception.CustomErrorResponse;
 import com.hotelPro.hotelmanagementsystem.exception.ResourceNotFoundException;
+import com.hotelPro.hotelmanagementsystem.model.Subscription;
+import com.hotelPro.hotelmanagementsystem.repository.CompanyRepository;
 import com.hotelPro.hotelmanagementsystem.service.CompanyAssociatedEntity;
 import com.hotelPro.hotelmanagementsystem.util.JwtTokenProvider;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -25,7 +28,8 @@ public class CompanyIdFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
-
+    @Autowired
+    private CompanyRepository companyRepository;
     @Value("${paths.with.companyId}")
     private List<String> pathsWithCompanyId;
 
@@ -64,6 +68,25 @@ try {
     if (roles.contains("ROLE_DASHBOARD_USER")) {
         List<Integer> associatedCompanyIds = jwtTokenProvider.getClaimFromToken(token, "companyIds", List.class);
         if (companyIdFromPath != null) {
+            if(associatedCompanyIds.contains(Integer.parseInt(companyIdFromPath))){
+                Long companyId = Long.parseLong(companyIdFromPath);
+                Subscription subscription = companyRepository.findById(companyId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId)).getSubscription();
+
+                if(subscription==null) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "No subscriptions found for company with ID: " + companyId);
+                } else {
+                    LocalDate currentDate = LocalDate.now();
+                        if(subscription.getExpiryDate().isBefore(currentDate)) {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Subscription with ID: " + subscription.getId() + " has expired.");
+                        }
+                }
+            }
+
             if (!associatedCompanyIds.contains(Integer.parseInt(companyIdFromPath))) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.setContentType("application/json");
@@ -80,6 +103,23 @@ try {
                 return;
             }
             for (CompanyAssociatedEntity entity : entities) {
+                if(associatedCompanyIds.contains(entity.getCompany().getId().intValue())){
+                    Long companyId = entity.getCompany().getId();
+                    Subscription subscription = companyRepository.findById(companyId)
+                            .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId)).getSubscription();
+                    if(subscription==null) {
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json");
+                        sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "No subscriptions found for company with ID: " + companyId);
+                    } else {
+                        LocalDate currentDate = LocalDate.now();
+                            if(subscription.getExpiryDate().isBefore(currentDate)) {
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json");
+                                sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Subscription with ID: " + subscription.getId() + " has expired.");
+                            }
+                    }
+                }
                 if (!associatedCompanyIds.contains(entity.getCompany().getId().intValue())) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");
@@ -91,6 +131,24 @@ try {
     }else {
         Long tokenCompanyId = jwtTokenProvider.getClaimFromToken(token, "companyId", Long.class);
         if (companyIdFromPath != null) {
+            if (tokenCompanyId.toString().equals(companyIdFromPath)) {
+                Long companyId = Long.parseLong(companyIdFromPath);
+                Subscription subscription = companyRepository.findById(companyId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId)).getSubscription();
+                if(subscription==null) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "No subscriptions found for company with ID: " + companyId);
+                } else {
+                    LocalDate currentDate = LocalDate.now();
+                        if(subscription.getExpiryDate().isBefore(currentDate)) {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Subscription with ID: " + subscription.getId() + " has expired.");
+                        }
+
+                }
+            }
             if (!tokenCompanyId.toString().equals(companyIdFromPath)) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.setContentType("application/json");
@@ -109,6 +167,23 @@ try {
             }
 
             for (CompanyAssociatedEntity entity : entities) {
+                if (tokenCompanyId.equals(entity.getCompany().getId())) {
+                    Long companyId = entity.getCompany().getId();
+                    Subscription subscription = companyRepository.findById(companyId)
+                            .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId)).getSubscription();
+                    if(subscription==null) {
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json");
+                        sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "No subscriptions found for company with ID: " + companyId);
+                    } else {
+                        LocalDate currentDate = LocalDate.now();
+                            if(subscription.getExpiryDate().isBefore(currentDate)) {
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json");
+                                sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Subscription with ID: " + subscription.getId() + " has expired.");
+                            }
+                    }
+                }
                 if (!tokenCompanyId.equals(entity.getCompany().getId())) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");

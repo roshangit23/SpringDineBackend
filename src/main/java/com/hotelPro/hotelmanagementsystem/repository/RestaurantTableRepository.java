@@ -17,4 +17,8 @@ public interface RestaurantTableRepository extends JpaRepository<RestaurantTable
     List<RestaurantTable> findByCompanyId(Long companyId);
 
     List<RestaurantTable> findByCurrentOrderIsNotNullAndCompanyId(Long companyId);
+
+    //Optional<RestaurantTable> findByTableNumberAndCompanyId(Integer tableNumber, Long companyId);
+
+    Optional<RestaurantTable> findByTableNumberAndCategoryAndCompanyId(Integer tableNumber, String category, Long companyId);
 }

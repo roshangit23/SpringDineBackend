@@ -14,6 +14,6 @@ Discount createDiscount(DiscountRequestDTO discountDTO,Long companyId);
     void deleteDiscount(Long id);
     double calculateDiscountedTotal(Order order, Discount discount);
     Discount getDiscountByCode(String code);
-
     List<Discount> getAllDiscounts(Long companyId);
+    Discount findByDiscountCodeAndCompanyId(String code, Long companyId);
 }

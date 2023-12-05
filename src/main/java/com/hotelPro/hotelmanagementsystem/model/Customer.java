@@ -12,10 +12,12 @@ public class Customer implements CompanyAssociatedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(name = "customer_no")
+    private Long customerNo;
     @NotBlank
     @Column(name = "name", nullable = false)
     private String name;
-    //@NotBlank
+    @NotBlank
     @Column(name = "phone_number")
     private String phoneNumber;
 
@@ -69,6 +71,14 @@ public class Customer implements CompanyAssociatedEntity {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public Long getCustomerNo() {
+        return customerNo;
+    }
+
+    public void setCustomerNo(Long customerNo) {
+        this.customerNo = customerNo;
     }
 
     public void setEmail(String email) {

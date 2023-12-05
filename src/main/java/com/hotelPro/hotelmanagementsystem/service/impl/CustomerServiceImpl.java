@@ -27,15 +27,19 @@ public class CustomerServiceImpl implements CustomerService {
        Company company = companyRepository.findById(companyId)
                .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId));
         customer.setCompany(company);
+       // Generate unique orderNo for the order within the company
+       Long lastCustomerNo = customerRepository.findMaxCustomerNoByCompany(company.getId());
+       customer.setCustomerNo(lastCustomerNo == null ? 1 : lastCustomerNo + 1);
         return customerRepository.save(customer);
     }
     @Override
-    public Customer saveCustomerForOrder(Customer customer, Order.OrderType orderType) {
+    public Customer saveCustomerForOrder(Customer customer, Order.OrderType orderType,Long companyId) {
         // Validate that the name is not blank
         if (customer.getName() == null || customer.getName().trim().isEmpty()) {
             throw new CustomException("Name is mandatory", HttpStatus.BAD_REQUEST);
         }
-
+        // Check if a customer with this phone number already exists
+        Optional<Customer> existingCustomer = Optional.ofNullable(customerRepository.findByPhoneNumber(customer.getPhoneNumber()));
         // If the order type is delivery, validate that the  phone number and address is not blank
         if (orderType == Order.OrderType.DELIVERY) {
             if (customer.getPhoneNumber() == null || customer.getPhoneNumber().trim().isEmpty()) {
@@ -44,18 +48,21 @@ public class CustomerServiceImpl implements CustomerService {
             if (customer.getAddress() == null || customer.getAddress().trim().isEmpty()) {
                 throw new CustomException("Address is mandatory for delivery orders", HttpStatus.BAD_REQUEST);
             }
-            // Check if a customer with this phone number already exists
-            Optional<Customer> existingCustomer = Optional.ofNullable(customerRepository.findByPhoneNumber(customer.getPhoneNumber()));
+
             if (existingCustomer.isPresent()) {
                 throw new CustomException("A customer with this phone number already exists", HttpStatus.BAD_REQUEST);
             }
         }
-
+        if (existingCustomer.isEmpty()) {
+            // Generate unique orderNo for the order within the company
+            Long lastCustomerNo = customerRepository.findMaxCustomerNoByCompany(companyId);
+            customer.setCustomerNo(lastCustomerNo == null ? 1 : lastCustomerNo + 1);
+        }
         // Save the customer to the database
         return customerRepository.save(customer);
     }
     @Override
-    public Customer saveCustomerForBill(Customer customer, Bill.PaymentMode paymentMode) {
+    public Customer saveCustomerForBill(Customer customer, Bill.PaymentMode paymentMode,Long companyId) {
         if (paymentMode == Bill.PaymentMode.DUE) {
             // Validate that the phone number is not blank
             if (customer.getPhoneNumber() == null || customer.getPhoneNumber().trim().isEmpty()) {
@@ -80,6 +87,9 @@ public class CustomerServiceImpl implements CustomerService {
                 if (customer.getAddress() == null || customer.getAddress().trim().isEmpty()) {
                     throw new CustomException("Address is mandatory for delivery orders", HttpStatus.BAD_REQUEST);
                 }
+                // Generate unique orderNo for the order within the company
+                Long lastCustomerNo = customerRepository.findMaxCustomerNoByCompany(companyId);
+                customer.setCustomerNo(lastCustomerNo == null ? 1 : lastCustomerNo + 1);
                 return customerRepository.save(customer);
             }
         }
@@ -120,4 +130,16 @@ public class CustomerServiceImpl implements CustomerService {
         return customerRepository.findByCompanyId(companyId);
        //return customerRepository.findAll();
     }
+    @Override
+    public Customer findByCustomerNoAndCompanyId(Long customerNo, Long companyId){
+        return customerRepository.findByCustomerNoAndCompanyId(customerNo, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "Customer No", customerNo));
+    }
+
+    @Override
+    public Customer findByPhoneNumberAndCompanyId(String phoneNumber, Long companyId) {
+        return customerRepository.findByPhoneNumberAndCompanyId(phoneNumber, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "Phone Number", phoneNumber));
+    }
+
 }

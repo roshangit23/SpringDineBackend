@@ -56,7 +56,7 @@ public class OrderOps {
 
     public void deleteOrder(Long id) {
         // implement the logic to delete an order
-        orderService.deleteOrder(id);
+       // orderService.deleteOrder(id);
         System.out.print("Order deleted successfully for "+id);
     }
 
