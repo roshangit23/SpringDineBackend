@@ -62,5 +62,16 @@ public class FoodItemController {
         foodItemService.deleteFoodItem(id);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Food item deleted successfully"));
     }
+
+    @GetMapping("/search/{companyId}")
+    public ResponseEntity<ApiResponse<List<FoodItemResponseDTO>>> searchFoodItems(
+            @PathVariable Long companyId,
+            @RequestParam String query) {
+        List<FoodItem> foodItems = foodItemService.searchFoodItems(companyId, query);
+        List<FoodItemResponseDTO> response = foodItems.stream()
+                .map(FoodItemResponseDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), response));
+    }
 }
 

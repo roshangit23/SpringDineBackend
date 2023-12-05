@@ -3,18 +3,19 @@ package com.hotelPro.hotelmanagementsystem.service.impl;
 import com.hotelPro.hotelmanagementsystem.controller.DTO.DiscountRequestDTO;
 import com.hotelPro.hotelmanagementsystem.exception.InvalidEnumValueException;
 import com.hotelPro.hotelmanagementsystem.exception.ResourceNotFoundException;
-import com.hotelPro.hotelmanagementsystem.model.Bill;
-import com.hotelPro.hotelmanagementsystem.model.Company;
-import com.hotelPro.hotelmanagementsystem.model.Discount;
-import com.hotelPro.hotelmanagementsystem.model.Order;
+import com.hotelPro.hotelmanagementsystem.model.*;
 import com.hotelPro.hotelmanagementsystem.repository.CompanyRepository;
 import com.hotelPro.hotelmanagementsystem.repository.DiscountRepository;
 import com.hotelPro.hotelmanagementsystem.service.DiscountService;
 import com.hotelPro.hotelmanagementsystem.service.OrderService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class DiscountServiceImpl implements DiscountService {
@@ -26,33 +27,51 @@ public class DiscountServiceImpl implements DiscountService {
     @Autowired
     private CompanyRepository companyRepository;
 
-private Discount convertToEntity(DiscountRequestDTO discountDTO) {
-    // Here, you would map the fields from the DTO to a new Discount entity
-    Discount discount = new Discount();
-    discount.setDiscountCode(discountDTO.getDiscountCode());
-    discount.setPercentage(discountDTO.getPercentage());
+    private Discount convertToEntity(DiscountRequestDTO discountDTO) {
+        Discount discount = new Discount();
+        discount.setDiscountCode(discountDTO.getDiscountCode());
+        discount.setPercentage(discountDTO.getPercentage());
 
-    if (discountDTO.getApplicableOrderType() != null && !discountDTO.getApplicableOrderType().trim().isEmpty()) {
-        try {
-            discount.setApplicableOrderType(Order.OrderType.valueOf(discountDTO.getApplicableOrderType()));
-        } catch (IllegalArgumentException e) {
-            throw new InvalidEnumValueException("applicableOrderType", "Invalid value for applicableOrderType");
+        // Handle applicable order types
+        Set<String> applicableOrderTypesStr = discountDTO.getApplicableOrderTypes();
+        if (applicableOrderTypesStr != null && !applicableOrderTypesStr.isEmpty()) {
+            Set<Order.OrderType> orderTypes = applicableOrderTypesStr.stream()
+                    .map(String::trim)
+                    .map(String::toUpperCase)
+                    .map(orderTypeStr -> {
+                        try {
+                            return Order.OrderType.valueOf(orderTypeStr.replace(" ", "_"));
+                        } catch (IllegalArgumentException e) {
+                            throw new InvalidEnumValueException("applicableOrderType", "Invalid value for applicableOrderType: " + orderTypeStr);
+                        }
+                    })
+                    .collect(Collectors.toSet());
+            discount.setApplicableOrderType(orderTypes);  // Assuming you have updated your Discount entity accordingly
         }
-    }
 
         discount.setMinimumBillAmount(discountDTO.getMinimumBillAmount());
 
-    if (discountDTO.getApplicablePaymentMode() != null && !discountDTO.getApplicablePaymentMode().trim().isEmpty()) {
-        try {
-            discount.setApplicablePaymentMode(Bill.PaymentMode.valueOf(discountDTO.getApplicablePaymentMode()));
+        // Handle applicable payment modes
+        Set<String> applicablePaymentModesStr = discountDTO.getApplicablePaymentModes();
+        if (applicablePaymentModesStr != null && !applicablePaymentModesStr.isEmpty()) {
+            Set<Bill.PaymentMode> paymentModes = applicablePaymentModesStr.stream()
+                    .map(String::trim)
+                    .map(String::toUpperCase)
+                    .map(paymentModeStr -> {
+                        try {
+                            return Bill.PaymentMode.valueOf(paymentModeStr.replace(" ", "_"));
+                        } catch (IllegalArgumentException e) {
+                            throw new InvalidEnumValueException("applicablePaymentMode", "Invalid value for applicablePaymentMode: " + paymentModeStr);
+                        }
+                    })
+                    .collect(Collectors.toSet());
+            discount.setApplicablePaymentMode(paymentModes);  // Assuming you have updated your Discount entity accordingly
         }
-        catch (IllegalArgumentException e) {
-            throw new InvalidEnumValueException("applicablePaymentMode", "Invalid value for applicablePaymentMode");
-        }
+
+        // ... other code ...
+
+        return discount;
     }
-    // Continue mapping other fields as necessary
-    return discount;
-}
     @Override
     public Discount createDiscount(DiscountRequestDTO discountDTO,Long companyId) {
         Company company = companyRepository.findById(companyId)
@@ -73,6 +92,15 @@ private Discount convertToEntity(DiscountRequestDTO discountDTO) {
         }
         return Enum.valueOf(enumClass, value.trim().toUpperCase());
     }
+
+    @Override
+    @Transactional
+    public Discount findByDiscountCodeAndCompanyId(String code, Long companyId) {
+        // Update the method to also search by companyId
+        return discountRepository.findByDiscountCodeAndCompanyId(code, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Discount", "Discount code", code));
+    }
+
     @Override
     public Discount updateDiscount(Long id, DiscountRequestDTO discountDetails) {
         Discount discount = getDiscountById(id);
@@ -83,47 +111,39 @@ private Discount convertToEntity(DiscountRequestDTO discountDTO) {
         if (discountDetails.getPercentage()!=null && discountDetails.getPercentage() >= 0.0) {
             discount.setPercentage(discountDetails.getPercentage());
         }
-//        if (discountDetails.getApplicableOrderType() != null) {
-//           discount.setApplicableOrderType(discountDetails.getApplicableOrderType());
-//       }
-//        Order.OrderType applicableOrderType = parseEnum(Order.OrderType.class, discountDetails.getApplicableOrderType());
-//        if (applicableOrderType != null) {
-//            discount.setApplicableOrderType(applicableOrderType);
-//        }
-        // Handle applicable order type
-        String applicableOrderTypeStr = discountDetails.getApplicableOrderType();
-        if (applicableOrderTypeStr != null && !applicableOrderTypeStr.trim().isEmpty()) {
-            try {
-                Order.OrderType applicableOrderType = Order.OrderType.valueOf(applicableOrderTypeStr.trim().toUpperCase());
-                discount.setApplicableOrderType(applicableOrderType);
-            } catch (IllegalArgumentException e) {
-                throw new InvalidEnumValueException("applicableOrderType", "Invalid value for applicableOrderType");
+        // Handle applicable order types
+        Set<String> applicableOrderTypeStrs = discountDetails.getApplicableOrderTypes();
+        if (applicableOrderTypeStrs != null && !applicableOrderTypeStrs.isEmpty()) {
+            Set<Order.OrderType> applicableOrderTypes = new HashSet<>();
+            for (String orderTypeStr : applicableOrderTypeStrs) {
+                try {
+                    Order.OrderType orderType = Order.OrderType.valueOf(orderTypeStr.trim().toUpperCase());
+                    applicableOrderTypes.add(orderType);
+                } catch (IllegalArgumentException e) {
+                    throw new InvalidEnumValueException("applicableOrderType", "Invalid value for applicableOrderType");
+                }
             }
+            discount.setApplicableOrderType(applicableOrderTypes);
         }
-        if (discountDetails.getMinimumBillAmount()!=null && discountDetails.getMinimumBillAmount()  >= 0.0) {
+        if (discountDetails.getMinimumBillAmount()!=null && discountDetails.getMinimumBillAmount() >= 0.0) {
             discount.setMinimumBillAmount(discountDetails.getMinimumBillAmount());
         }
-//        if (discountDetails.getApplicablePaymentMode() != null) {
-//           discount.setApplicablePaymentMode(discountDetails.getApplicablePaymentMode());
-//        }
-//        Bill.PaymentMode applicablePaymentMode = parseEnum(Bill.PaymentMode.class, discountDetails.getApplicablePaymentMode());
-//        if (applicablePaymentMode != null) {
-//            discount.setApplicablePaymentMode(applicablePaymentMode);
-//        }
-        String applicablePaymentModeStr = discountDetails.getApplicablePaymentMode();
-        if (applicablePaymentModeStr != null && !applicablePaymentModeStr.trim().isEmpty()) {
-            try {
-                Bill.PaymentMode applicablePaymentMode = Bill.PaymentMode.valueOf(applicablePaymentModeStr.trim().toUpperCase());
-                discount.setApplicablePaymentMode(applicablePaymentMode);
+        // Handle applicable payment modes
+        Set<String> applicablePaymentModeStrs = discountDetails.getApplicablePaymentModes();
+        if (applicablePaymentModeStrs != null && !applicablePaymentModeStrs.isEmpty()) {
+            Set<Bill.PaymentMode> applicablePaymentModes = new HashSet<>();
+            for (String paymentModeStr : applicablePaymentModeStrs) {
+                try {
+                    Bill.PaymentMode paymentMode = Bill.PaymentMode.valueOf(paymentModeStr.trim().toUpperCase());
+                    applicablePaymentModes.add(paymentMode);
+                } catch (IllegalArgumentException e) {
+                    throw new InvalidEnumValueException("applicablePaymentMode", "Invalid value for applicablePaymentMode");
+                }
             }
-            catch (IllegalArgumentException e) {
-                throw new InvalidEnumValueException("applicablePaymentMode", "Invalid value for applicablePaymentMode");
-            }
+            discount.setApplicablePaymentMode(applicablePaymentModes);
         }
         return discountRepository.save(discount);
     }
-
-
 
     @Override
     public void deleteDiscount(Long id) {

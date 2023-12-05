@@ -19,4 +19,6 @@ public interface FoodItemService {
 
 
     FoodItem findByShortCodeAndCompanyId(String shortCode, Long companyId);
+
+    List<FoodItem> searchFoodItems(Long companyId, String query);
 }

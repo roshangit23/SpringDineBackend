@@ -48,9 +48,10 @@ public class Order implements CompanyAssociatedEntity {
             fetch = FetchType.LAZY, optional = true)
     private Bill bill;
 
-    @OneToOne
-    @JoinColumn(name = "table_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "table_id", unique = false) // Ensure this is set to false
     private RestaurantTable restaurantTable;
+
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private Customer customer;

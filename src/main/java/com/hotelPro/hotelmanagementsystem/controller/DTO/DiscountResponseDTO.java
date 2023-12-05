@@ -1,29 +1,41 @@
 package com.hotelPro.hotelmanagementsystem.controller.DTO;
 
-import com.hotelPro.hotelmanagementsystem.model.Bill;
 import com.hotelPro.hotelmanagementsystem.model.Discount;
-import com.hotelPro.hotelmanagementsystem.model.Order;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class DiscountResponseDTO {
 
     private Long id;
     private String discountCode;
     private Double percentage;
-    private Order.OrderType applicableOrderType;
+    private Set<String> applicableOrderTypes;  // Updated to Set<String>
     private Double minimumBillAmount;
-    private Bill.PaymentMode applicablePaymentMode;
-    // If you want to include specific customer details, you can include a set of CustomerDTO here
-    // private Set<CustomerResponseDTO> applicableCustomers;
+    private Set<String> applicablePaymentModes;  // Updated to Set<String>
 
     public DiscountResponseDTO(Discount discount) {
         this.id = discount.getId();
         this.discountCode = discount.getDiscountCode();
         this.percentage = discount.getPercentage();
-        this.applicableOrderType = discount.getApplicableOrderType();;
+
+        // Convert the Enum sets to String sets for the response
+        if(discount.getApplicableOrderType() != null) {
+            this.applicableOrderTypes = discount.getApplicableOrderType().stream()
+                    .map(Enum::name)
+                    .collect(Collectors.toSet());
+        } else {
+            this.applicableOrderTypes = Set.of();  // Assign an empty set if null
+        }
         this.minimumBillAmount = discount.getMinimumBillAmount();
-        this.applicablePaymentMode = discount.getApplicablePaymentMode();;
-        // Convert the applicableCustomers set to DTO if needed
-        // this.applicableCustomers = discount.getApplicableCustomers().stream().map(CustomerResponseDTO::new).collect(Collectors.toSet());
+
+        if(discount.getApplicablePaymentMode() != null) {
+            this.applicablePaymentModes = discount.getApplicablePaymentMode().stream()
+                    .map(Enum::name)
+                    .collect(Collectors.toSet());
+        } else {
+            this.applicablePaymentModes = Set.of();  // Assign an empty set if null
+        }
     }
 
     // Getters and Setters
@@ -52,14 +64,6 @@ public class DiscountResponseDTO {
         this.percentage = percentage;
     }
 
-    public Order.OrderType getApplicableOrderType() {
-        return applicableOrderType;
-    }
-
-    public void setApplicableOrderType(Order.OrderType applicableOrderType) {
-        this.applicableOrderType = applicableOrderType;
-    }
-
     public Double getMinimumBillAmount() {
         return minimumBillAmount;
     }
@@ -68,13 +72,21 @@ public class DiscountResponseDTO {
         this.minimumBillAmount = minimumBillAmount;
     }
 
-    public Bill.PaymentMode getApplicablePaymentMode() {
-        return applicablePaymentMode;
+    public Set<String> getApplicableOrderTypes() {
+        return applicableOrderTypes;
     }
 
-    public void setApplicablePaymentMode(Bill.PaymentMode applicablePaymentMode) {
-        this.applicablePaymentMode = applicablePaymentMode;
+    public void setApplicableOrderTypes(Set<String> applicableOrderTypes) {
+        this.applicableOrderTypes = applicableOrderTypes;
     }
 
-    // Other methods if needed
+    public Set<String> getApplicablePaymentModes() {
+        return applicablePaymentModes;
+    }
+
+    public void setApplicablePaymentModes(Set<String> applicablePaymentModes) {
+        this.applicablePaymentModes = applicablePaymentModes;
+    }
+
+// Other methods if needed
 }

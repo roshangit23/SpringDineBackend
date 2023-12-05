@@ -108,13 +108,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
-//    @ExceptionHandler(Exception.class) // Catch-all for any other exceptions
-//    public ResponseEntity<CustomErrorResponse> handleGenericException(Exception ex) {
-//        CustomErrorResponse errorResponse = new CustomErrorResponse();
-//        errorResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-//        errorResponse.setError("An unexpected error occurred");
-//
-//        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-//    }
+    @ExceptionHandler(Exception.class) // Catch-all for any other exceptions
+    public ResponseEntity<CustomErrorResponse> handleGenericException(Exception ex) {
+        CustomErrorResponse errorResponse = new CustomErrorResponse();
+        errorResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        errorResponse.setError("An unexpected error occurred");
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
 }

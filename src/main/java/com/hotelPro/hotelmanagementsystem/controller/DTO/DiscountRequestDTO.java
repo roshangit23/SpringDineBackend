@@ -3,14 +3,21 @@ package com.hotelPro.hotelmanagementsystem.controller.DTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.Set;
+
 public class DiscountRequestDTO {
+
     @NotBlank
     private String discountCode;
+
     @NotNull
     private Double percentage;
-    private String applicableOrderType; // Accepting as String
+
+    private Set<String> applicableOrderTypes;  // Updated to Set<String>
+
     private Double minimumBillAmount;
-    private String applicablePaymentMode; // Accepting as String
+
+    private Set<String> applicablePaymentModes;  // Updated to Set<String>
 
     // Getters and Setters
 
@@ -30,12 +37,12 @@ public class DiscountRequestDTO {
         this.percentage = percentage;
     }
 
-    public String getApplicableOrderType() {
-        return applicableOrderType;
+    public Set<String> getApplicableOrderTypes() {  // Updated return type
+        return applicableOrderTypes;
     }
 
-    public void setApplicableOrderType(String applicableOrderType) {
-        this.applicableOrderType = applicableOrderType;
+    public void setApplicableOrderTypes(Set<String> applicableOrderTypes) {  // Updated parameter type
+        this.applicableOrderTypes = applicableOrderTypes;
     }
 
     public Double getMinimumBillAmount() {
@@ -46,11 +53,11 @@ public class DiscountRequestDTO {
         this.minimumBillAmount = minimumBillAmount;
     }
 
-    public String getApplicablePaymentMode() {
-        return applicablePaymentMode;
+    public Set<String> getApplicablePaymentModes() {  // Updated return type
+        return applicablePaymentModes;
     }
 
-    public void setApplicablePaymentMode(String applicablePaymentMode) {
-        this.applicablePaymentMode = applicablePaymentMode;
+    public void setApplicablePaymentModes(Set<String> applicablePaymentModes) {  // Updated parameter type
+        this.applicablePaymentModes = applicablePaymentModes;
     }
 }

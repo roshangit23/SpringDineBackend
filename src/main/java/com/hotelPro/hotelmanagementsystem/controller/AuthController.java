@@ -1,6 +1,9 @@
 package com.hotelPro.hotelmanagementsystem.controller;
 
 import com.hotelPro.hotelmanagementsystem.controller.DTO.*;
+import com.hotelPro.hotelmanagementsystem.exception.ResourceNotFoundException;
+import com.hotelPro.hotelmanagementsystem.model.Company;
+import com.hotelPro.hotelmanagementsystem.repository.CompanyRepository;
 import com.hotelPro.hotelmanagementsystem.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -18,7 +21,8 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
-
+    @Autowired
+    private CompanyRepository companyRepository;
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<?>> createAuthenticationToken(@Valid @RequestBody AuthenticationRequest authenticationRequest) throws Exception {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), authService.login(authenticationRequest)));
@@ -88,5 +92,11 @@ public class AuthController {
     public ResponseEntity<ApiResponse<?>> createDashboardAuthenticationToken(@Valid @RequestBody AuthenticationRequest authenticationRequest) throws Exception {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), authService.dashboardLogin(authenticationRequest)));
     }
-
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<CompanyResponseDTO> getCompanyById(@PathVariable Long companyId) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company", "companyId", companyId));
+        CompanyResponseDTO response = new CompanyResponseDTO(company);
+        return ResponseEntity.ok(response);
+    }
 }

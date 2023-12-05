@@ -35,7 +35,7 @@ public class BillOps {
 
     public void deleteBill(Long id) {
         // implement the logic to delete a bill
-        billService.deleteBill(id);
+        //billService.deleteBill(id);
         System.out.println("Bill deleted for Id "+id);
     }
 }

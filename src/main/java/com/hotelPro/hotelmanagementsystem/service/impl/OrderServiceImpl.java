@@ -46,15 +46,16 @@ public class OrderServiceImpl implements OrderService {
     private CustomerRepository customerRepository;
     @Autowired
     private EmployeeRepository employeeRepository;
-
+    @Autowired
+    private OrderAuditRepository orderAuditRepository;
     @Autowired
     private CustomerService customerService;
     @Autowired
     private FoodItemService foodItemService;
-//    @Autowired
+    //    @Autowired
 //    private RestaurantTableService restaurantTableService;
-   @Autowired
-   private CompanyRepository companyRepository;
+    @Autowired
+    private CompanyRepository companyRepository;
 
     private Order convertToEntity(OrderRequestDTO orderRequestDTO, Company company) {
         Order order = new Order();
@@ -113,14 +114,16 @@ public class OrderServiceImpl implements OrderService {
         // As we can't just set DTO fields into entity
         // We should create new FoodItemOrder entities with appropriate links
         // Here we suppose that FoodItemOrderDTO has a field foodItemId to link it with FoodItem
-
+        Long lastKotNo = foodItemOrderDetailRepository.findMaxKotNoByCompany(company.getId());
+        Long nextKotNo = lastKotNo == null ? 1 : lastKotNo + 1;
         if (orderRequestDTO.getFoodItemOrders() != null) {
-            Set<FoodItemOrder> foodItemOrders = orderRequestDTO.getFoodItemOrders().stream()
-                    .map(foodItemOrderDTO -> convertFoodItemOrderToEntity(foodItemOrderDTO, company))   // calling the conversion method for FoodItemOrder
-                    .collect(Collectors.toSet());
-
+            Set<FoodItemOrder> foodItemOrders = new HashSet<>();
+            for (FoodItemOrderDTO foodItemOrderDTO : orderRequestDTO.getFoodItemOrders()) {
+                FoodItemOrder foodItemOrder = convertFoodItemOrderToEntity(foodItemOrderDTO, company, nextKotNo++);
+                foodItemOrders.add(foodItemOrder);
+            }
             order.setFoodItemOrders(foodItemOrders);
-        }else {
+        } else {
             order.setFoodItemOrders(new HashSet<>());
         }
         order.setStartTime(LocalDateTime.now());  // Set the start time for new orders
@@ -201,9 +204,12 @@ public class OrderServiceImpl implements OrderService {
                     if (foodItemOrderDTO.getComments() != null) {
                         existingOrder.get().setComments(foodItemOrderDTO.getComments());
                     }
-                   //existingOrder.get().setCompany(company);
+                    //existingOrder.get().setCompany(company);
                     // Create a new FoodItemOrderDetail entity and set its properties
                     FoodItemOrderDetail foodItemOrderDetail = new FoodItemOrderDetail();
+                    // Generate unique kotNo for the order within the company
+                    Long lastKotNo = foodItemOrderDetailRepository.findMaxKotNoByCompany(company.getId());
+                    foodItemOrderDetail.setKotNo(lastKotNo == null ? 1 : lastKotNo + 1);
                     foodItemOrderDetail.setQuantity(foodItemOrderDTO.getQuantity());
                     foodItemOrderDetail.setStatus(FoodItemOrder.Status.PLACED); // Set the status to PLACED
                     foodItemOrderDetail.setPlace_time(LocalDateTime.now());
@@ -214,15 +220,17 @@ public class OrderServiceImpl implements OrderService {
                     existingOrder.get().getFoodItemOrderDetails().add(foodItemOrderDetail);
 
                 } else {
+                    Long lastKotNo = foodItemOrderDetailRepository.findMaxKotNoByCompany(company.getId());
+                    Long nextKotNo = lastKotNo == null ? 1 : lastKotNo + 1;
                     // If it doesn't exist, add a new FoodItemOrder
-                    FoodItemOrder newFoodItemOrder = convertFoodItemOrderToEntity(foodItemOrderDTO, company);
+                    FoodItemOrder newFoodItemOrder = convertFoodItemOrderToEntity(foodItemOrderDTO, company,nextKotNo);
                     order.getFoodItemOrders().add(newFoodItemOrder);
                 }
             }
         }
     }
 
-    private FoodItemOrder convertFoodItemOrderToEntity(FoodItemOrderDTO foodItemOrderDTO, Company company) {
+    private FoodItemOrder convertFoodItemOrderToEntity(FoodItemOrderDTO foodItemOrderDTO, Company company, Long kotNo) {
         FoodItemOrder foodItemOrder = new FoodItemOrder();
         if(foodItemOrderDTO.getQuantity()==null){
             throw new CustomException("'quantity' for foodItemOrders is mandatory", HttpStatus.BAD_REQUEST);
@@ -241,6 +249,7 @@ public class OrderServiceImpl implements OrderService {
 
         // Create a new FoodItemOrderDetail entity and set its properties
         FoodItemOrderDetail foodItemOrderDetail = new FoodItemOrderDetail();
+        foodItemOrderDetail.setKotNo(kotNo);
         foodItemOrderDetail.setCompany(company);
         foodItemOrderDetail.setQuantity(foodItemOrderDTO.getQuantity());
         foodItemOrderDetail.setStatus(FoodItemOrder.Status.PLACED); // Set the status to PLACED
@@ -260,7 +269,7 @@ public class OrderServiceImpl implements OrderService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId));
         //return saveOrder(orderRequestDTO,orderId, null);
-      Order order = convertToEntity(orderRequestDTO,company);
+        Order order = convertToEntity(orderRequestDTO,company);
         if (order.getFoodItemOrders() != null) {
             for (FoodItemOrder foodItemOrder : order.getFoodItemOrders()) {
                 foodItemOrder.setOrder(order);  // Explicitly set the Order in the FoodItemOrder
@@ -274,14 +283,14 @@ public class OrderServiceImpl implements OrderService {
 
         // If orderId is provided, then it's an update. Fetch the existing order.
         Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
-            if (order.getStatus() == Order.Status.COMPLETED || order.getStatus() == Order.Status.MERGED || order.getStatus() == Order.Status.REMOVED_WITHOUT_CREATING) {
-                throw new CustomException("Order cannot be updated once order is completed, merged or removed", HttpStatus.BAD_REQUEST);
-            }
-            if (order.getBill() != null) {
-                throw new CustomException("Cannot update order that is already billed", HttpStatus.BAD_REQUEST);
-            }
-            updateOrderFromDTO(order, orderRequestDTO);  // Update the existing order with the DTO data
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        if (order.getStatus() == Order.Status.COMPLETED || order.getStatus() == Order.Status.MERGED || order.getStatus() == Order.Status.REMOVED_WITHOUT_CREATING) {
+            throw new CustomException("Order cannot be updated once order is completed, merged or removed", HttpStatus.BAD_REQUEST);
+        }
+        if (order.getBill() != null) {
+            throw new CustomException("Cannot update order that is already billed", HttpStatus.BAD_REQUEST);
+        }
+        updateOrderFromDTO(order, orderRequestDTO);  // Update the existing order with the DTO data
 
         if (employeeId != null) {
             Employee employee = employeeRepository.findById(employeeId)
@@ -315,7 +324,7 @@ public class OrderServiceImpl implements OrderService {
                 }
             }
             if (customer == null) {
-                customer = customerService.saveCustomerForOrder(order.getCustomer(), order.getType());
+                customer = customerService.saveCustomerForOrder(order.getCustomer(), order.getType(),order.getCompany().getId());
             }
             order.setCustomer(customer);
         }
@@ -347,15 +356,31 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void deleteOrder(Long id) {
+    public void deleteOrder(Long id, String comments) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
-//        if(order.getStatus()== Order.Status.COMPLETED || order.getStatus()== Order.Status.MERGED || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
-//            throw new CustomException("Order cannot be deleted once order is completed, merged or removed", HttpStatus.BAD_REQUEST);
-//        }
-        if(order.getBill()!=null){
+        if(order.getBill() != null){
             throw new CustomException("Order cannot be deleted once Bill is created for order", HttpStatus.BAD_REQUEST);
         }
+
+        // Copy data from Order to OrderAudit
+        OrderAudit orderAudit = new OrderAudit();
+        orderAudit.setOrderNo(order.getOrderNo());
+        orderAudit.setStatus(order.getStatus());
+        orderAudit.setType(order.getType());
+        orderAudit.setCustomerCount(order.getCustomer_count());
+        orderAudit.setStartTime(order.getStartTime());
+        orderAudit.setEndTime(order.getEndTime());
+        orderAudit.setCompanyId(order.getCompany().getId());
+        orderAudit.setCustomerId(order.getCustomer().getId());
+        orderAudit.setEmployeeId(order.getAssignedEmployee().getId());
+        orderAudit.setOrderComments(order.getComments());
+        orderAudit.setDeletedAt(LocalDateTime.now());
+        orderAudit.setComments(comments);
+
+        orderAuditRepository.save(orderAudit);
+
+        // Now delete the order
         orderRepository.deleteById(id);
     }
 
@@ -395,7 +420,7 @@ public class OrderServiceImpl implements OrderService {
         }
         FoodItem foodItem = foodItemRepository.findById(foodItemId)
                 .orElseThrow(() -> new ResourceNotFoundException("FoodItem", "id", foodItemId));
-      Company company = order.getCompany();
+        Company company = order.getCompany();
         FoodItemOrder foodItemOrder = order.getFoodItemOrders()
                 .stream()
                 .filter(fio -> fio.getFoodItem().getId().equals(foodItemId))
@@ -454,9 +479,9 @@ public class OrderServiceImpl implements OrderService {
                 else{
                     throw new CustomException("Cannot remove items as quantity for removal exceeds the existing quantity", HttpStatus.BAD_REQUEST);
                 }
-               if(foodItemOrder.getQuantity()<=0){
+                if(foodItemOrder.getQuantity()<=0){
                     order.removeFoodItemOrder(foodItemOrder);
-               }
+                }
                 foodItemOrderRepository.save(foodItemOrder);
                 itemFound = true;
                 break;
@@ -512,19 +537,19 @@ public class OrderServiceImpl implements OrderService {
         if (order.getBill() != null) {
             throw new CustomException("Cannot update order that is already billed",HttpStatus.BAD_REQUEST);
         }
-       if(status== null){
-           throw new CustomException("status field missing in request body", HttpStatus.BAD_REQUEST);
-       }
-    try {
-        Order.Status orderStatus = Order.Status.valueOf(status.trim().toUpperCase());
-        order.setStatus(orderStatus);
-        // If the status is whatever you consider complete, set the end time
-        if (orderStatus == Order.Status.COMPLETED || orderStatus == Order.Status.MERGED || orderStatus == Order.Status.REMOVED_WITHOUT_CREATING) {
-            order.setEndTime(LocalDateTime.now());
+        if(status== null){
+            throw new CustomException("status field missing in request body", HttpStatus.BAD_REQUEST);
         }
-    } catch (IllegalArgumentException e) {
-        throw new InvalidEnumValueException("status", "Invalid value for status");
-    }
+        try {
+            Order.Status orderStatus = Order.Status.valueOf(status.trim().toUpperCase());
+            order.setStatus(orderStatus);
+            // If the status is whatever you consider complete, set the end time
+            if (orderStatus == Order.Status.COMPLETED || orderStatus == Order.Status.MERGED || orderStatus == Order.Status.REMOVED_WITHOUT_CREATING) {
+                order.setEndTime(LocalDateTime.now());
+            }
+        } catch (IllegalArgumentException e) {
+            throw new InvalidEnumValueException("status", "Invalid value for status");
+        }
 
         if (order.getStatus() == Order.Status.COMPLETED) {
             for (FoodItemOrder foodItemOrder : order.getFoodItemOrders()) {
@@ -575,7 +600,8 @@ public class OrderServiceImpl implements OrderService {
         double discountAmount = 0.0;
 
         // Check if the discount is applicable for the specific order type
-        if (discount.getApplicableOrderType() != null && discount.getApplicableOrderType() != order.getType()) {
+        Set<Order.OrderType> applicableOrderTypes = discount.getApplicableOrderType();
+        if (applicableOrderTypes != null && !applicableOrderTypes.isEmpty() && !applicableOrderTypes.contains(order.getType())) {
             return discountAmount;
         }
 //// Check if the discount is applicable for the specific order type
@@ -587,12 +613,12 @@ public class OrderServiceImpl implements OrderService {
 //        }
 
         // Check if the discount is applicable for the specific customer
-        if (discount.getApplicableCustomers() != null && !discount.getApplicableCustomers().contains(order.getCustomer())) {
-            return discountAmount;
-        }
+//        if (discount.getApplicableCustomers() != null && !discount.getApplicableCustomers().contains(order.getCustomer())) {
+//            return discountAmount;
+//        }
 
         // Check if the discount is applicable based on the minimum bill amount
-        if (discount.getMinimumBillAmount() > 0 && calculateTotal(order) < discount.getMinimumBillAmount()) {
+        if (discount.getMinimumBillAmount() != null && discount.getMinimumBillAmount() > 0 && calculateTotal(order) < discount.getMinimumBillAmount()) {
             return discountAmount;
         }
 
@@ -609,15 +635,21 @@ public class OrderServiceImpl implements OrderService {
         return order.getFoodItemOrders();
     }
 
-@Override
-public Set<FoodItemOrder> getAllFoodItemOrdersByCompanyId(Long companyId) {
-    // Check if the company exists
-    if (!companyRepository.existsById(companyId)) {
-        throw new ResourceNotFoundException("Company", "id", companyId);
+    @Override
+    public FoodItemOrder getFoodItemOrderById(Long foodItemOrderId) {
+        return foodItemOrderRepository.findById(foodItemOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Food item Order", "id", foodItemOrderId));
     }
-    // Fetch all FoodItemOrders associated with the given companyId
-    return foodItemOrderRepository.findByCompanyId(companyId);
-}
+
+    @Override
+    public Set<FoodItemOrder> getAllFoodItemOrdersByCompanyId(Long companyId) {
+        // Check if the company exists
+        if (!companyRepository.existsById(companyId)) {
+            throw new ResourceNotFoundException("Company", "id", companyId);
+        }
+        // Fetch all FoodItemOrders associated with the given companyId
+        return foodItemOrderRepository.findByCompanyId(companyId);
+    }
 
     @Override
     public Set<FoodItemOrder> getFoodItemOrdersByStatusAndCompanyId(Long companyId, FoodItemOrder.Status status) {
@@ -646,30 +678,30 @@ public Set<FoodItemOrder> getAllFoodItemOrdersByCompanyId(Long companyId) {
                 .filter(detail -> detail.getId().equals(foodItemOrderDetailId))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("FoodItemOrderDetail", "id", foodItemOrderDetailId));
-   try {
-       if(targetDetail.getStatus() == FoodItemOrder.Status.CANCELED || targetDetail.getStatus() == FoodItemOrder.Status.COMPLETED){
-           throw new CustomException("cannot update foodItemOrderDetail which is completed or cancelled", HttpStatus.BAD_REQUEST);
-       }
-       // Update the specific FoodItemOrderDetail's status
-       if (status == FoodItemOrder.Status.CANCELED && (targetDetail.getStatus() == FoodItemOrder.Status.PLACED || targetDetail.getStatus() == FoodItemOrder.Status.IN_PROGRESS)) {
-           targetDetail.setStatus(status);
-           targetDetail.setEnd_time(LocalDateTime.now());
-       } else if (status != FoodItemOrder.Status.CANCELED) {
-           targetDetail.setStatus(status);
-           if (status == FoodItemOrder.Status.IN_PROGRESS) {
-               if(targetDetail.getStart_time()==null){
-                   targetDetail.setStart_time(LocalDateTime.now());
-               }
-           }
-           if (status == FoodItemOrder.Status.COMPLETED) {
-               targetDetail.setEnd_time(LocalDateTime.now());
-           }
-       }
+        try {
+            if(targetDetail.getStatus() == FoodItemOrder.Status.CANCELED || targetDetail.getStatus() == FoodItemOrder.Status.COMPLETED){
+                throw new CustomException("cannot update foodItemOrderDetail which is completed or cancelled", HttpStatus.BAD_REQUEST);
+            }
+            // Update the specific FoodItemOrderDetail's status
+            if (status == FoodItemOrder.Status.CANCELED && (targetDetail.getStatus() == FoodItemOrder.Status.PLACED || targetDetail.getStatus() == FoodItemOrder.Status.IN_PROGRESS)) {
+                targetDetail.setStatus(status);
+                targetDetail.setEnd_time(LocalDateTime.now());
+            } else if (status != FoodItemOrder.Status.CANCELED) {
+                targetDetail.setStatus(status);
+                if (status == FoodItemOrder.Status.IN_PROGRESS) {
+                    if(targetDetail.getStart_time()==null){
+                        targetDetail.setStart_time(LocalDateTime.now());
+                    }
+                }
+                if (status == FoodItemOrder.Status.COMPLETED) {
+                    targetDetail.setEnd_time(LocalDateTime.now());
+                }
+            }
 
-   }
-   catch (IllegalArgumentException e) {
-       throw new InvalidEnumValueException("status", "Invalid value for status");
-   }
+        }
+        catch (IllegalArgumentException e) {
+            throw new InvalidEnumValueException("status", "Invalid value for status");
+        }
         boolean allCompleted = true;
         boolean anyInProgress = false;
         boolean allCancelled = true;

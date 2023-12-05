@@ -20,5 +20,11 @@ public interface RestaurantTableService {
 
     RestaurantTable updateTable(Long tableId, String category, Integer tableNumber);
 
+    //RestaurantTable findByTableNumberAndCompanyId(Integer tableNumber, Long companyId);
+
+    void deleteRestaurantTable(Long id);
+
+    RestaurantTable findByTableNumberCategoryAndCompanyId(Integer tableNumber, String category, Long companyId);
+
 //    RestaurantTable getTableByOrderId(Long id);
 }

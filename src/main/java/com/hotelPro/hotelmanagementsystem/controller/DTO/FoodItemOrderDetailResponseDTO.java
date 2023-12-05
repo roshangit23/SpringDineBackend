@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 public class FoodItemOrderDetailResponseDTO {
     private Long id;
+    private Long kotNo;
     private Long foodItemId;
     private Long foodItemOrderId;
     private Integer quantity;
@@ -19,6 +20,7 @@ public class FoodItemOrderDetailResponseDTO {
 
     public FoodItemOrderDetailResponseDTO(FoodItemOrderDetail foodItemOrderDetail) {
         this.id = foodItemOrderDetail.getId();
+        this.kotNo = foodItemOrderDetail.getKotNo();
         this.foodItemId = foodItemOrderDetail.getFoodItemOrder().getFoodItem().getId();
         this.foodItemOrderId = foodItemOrderDetail.getFoodItemOrder().getId();
         this.quantity = foodItemOrderDetail.getQuantity();
@@ -37,6 +39,14 @@ public class FoodItemOrderDetailResponseDTO {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getKotNo() {
+        return kotNo;
+    }
+
+    public void setKotNo(Long kotNo) {
+        this.kotNo = kotNo;
     }
 
     public Long getFoodItemId() {

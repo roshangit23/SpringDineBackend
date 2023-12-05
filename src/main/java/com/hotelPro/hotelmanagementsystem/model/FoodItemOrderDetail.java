@@ -6,12 +6,14 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "food_item_order_detail", uniqueConstraints = @UniqueConstraint(columnNames = {"kot_no", "company_id"}))
 public class FoodItemOrderDetail implements CompanyAssociatedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Column(name = "kot_no")
+    private Long kotNo;
     @ManyToOne
     @JoinColumn(name = "food_item_order_id")
     private FoodItemOrder foodItemOrder;
@@ -85,6 +87,14 @@ public class FoodItemOrderDetail implements CompanyAssociatedEntity {
 
     public void setPlace_time(LocalDateTime place_time) {
         this.place_time = place_time;
+    }
+
+    public Long getKotNo() {
+        return kotNo;
+    }
+
+    public void setKotNo(Long kotNo) {
+        this.kotNo = kotNo;
     }
 
     @Override

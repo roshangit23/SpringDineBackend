@@ -6,6 +6,8 @@ public class UserResponseDTO {
 
     private Long id;
     private String username;
+    private String firstName;
+    private String lastName;
     private String email;
     private String mobileNumber;
     private Set<String> roles;
@@ -13,9 +15,11 @@ public class UserResponseDTO {
     // Constructors
     public UserResponseDTO() {}
 
-    public UserResponseDTO(Long id, String username, String email, String mobileNumber, Set<String> roles) {
+    public UserResponseDTO(Long id, String username,String firstName, String lastName, String email, String mobileNumber, Set<String> roles) {
         this.id = id;
         this.username = username;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.email = email;
         this.mobileNumber = mobileNumber;
         this.roles = roles;
@@ -36,6 +40,22 @@ public class UserResponseDTO {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getEmail() {

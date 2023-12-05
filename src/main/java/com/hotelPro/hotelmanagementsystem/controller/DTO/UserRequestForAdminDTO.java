@@ -9,6 +9,10 @@ public class UserRequestForAdminDTO {
     @Size(min = 8, message = "Password should be at least 8 characters.")
     private String password;
     @NotBlank
+    private String firstName;
+    @NotBlank
+    private String lastName;
+    @NotBlank
     @Email
     private String email;
     @NotBlank
@@ -20,9 +24,11 @@ public class UserRequestForAdminDTO {
     // Constructors
     public UserRequestForAdminDTO() {}
 
-    public UserRequestForAdminDTO(String username, String password, String email, String mobileNumber, Long companyId) {
+    public UserRequestForAdminDTO(String username, String password,String firstName, String lastName, String email, String mobileNumber, Long companyId) {
         this.username = username;
         this.password = password;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.email = email;
         this.mobileNumber = mobileNumber;
         this.companyId = companyId;
@@ -43,6 +49,22 @@ public class UserRequestForAdminDTO {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getEmail() {

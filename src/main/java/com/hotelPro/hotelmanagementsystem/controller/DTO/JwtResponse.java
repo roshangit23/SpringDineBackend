@@ -11,8 +11,9 @@ public class JwtResponse {
     private String email;
     private String mobileNumber;
     private List<String> roles;
+    private String planName;
     private String companyName;
-    public JwtResponse(String token, String refreshToken, Long id, String username, String email, String mobileNumber,List<String> roles,String companyName) {
+    public JwtResponse(String token, String refreshToken, Long id, String username, String email, String mobileNumber,List<String> roles,String companyName,String planName) {
         this.token = token;
         this.refreshToken = refreshToken;
         this.id = id;
@@ -21,6 +22,7 @@ public class JwtResponse {
         this.mobileNumber = mobileNumber;
         this.roles = roles;
         this.companyName = companyName;
+        this.planName = planName;
     }
 
     // Getters, setters, and other standard methods
@@ -83,6 +85,14 @@ public class JwtResponse {
 
     public void setCompanyName(String companyName) {
         this.companyName = companyName;
+    }
+
+    public String getPlanName() {
+        return planName;
+    }
+
+    public void setPlanName(String planName) {
+        this.planName = planName;
     }
 
     public void setRoles(List<String> roles) {

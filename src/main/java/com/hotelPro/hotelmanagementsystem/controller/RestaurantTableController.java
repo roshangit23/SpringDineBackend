@@ -51,7 +51,11 @@ public class RestaurantTableController {
         RestaurantTable table = tableService.getTableById(tableId);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new RestaurantTableResponseDTO(table)));
     }
-
+    @GetMapping("/tableNumber/{companyId}/{tableNumber}/{category}")
+    public ResponseEntity<ApiResponse<RestaurantTableResponseDTO>> getTableByNoAndCompanyId(@PathVariable Long companyId, @PathVariable Integer tableNumber, @PathVariable String category) {
+        RestaurantTable table = tableService.findByTableNumberCategoryAndCompanyId(tableNumber, category, companyId);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new RestaurantTableResponseDTO(table)));
+    }
     @GetMapping("/status/{tableId}")
     public ResponseEntity<ApiResponse<TableStatusDTO>> getTableStatus(@PathVariable Long tableId) {
         RestaurantTable.TableStatus status = tableService.getTableStatusById(tableId);
@@ -105,4 +109,11 @@ public class RestaurantTableController {
         double totalAmount = tableService.mergeOrders(tableIds);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), totalAmount));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteRestaurantTable(@PathVariable Long id) {
+        tableService.deleteRestaurantTable(id);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Table deleted successfully"));
+    }
+
 }

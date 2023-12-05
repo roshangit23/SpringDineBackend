@@ -15,7 +15,7 @@ public interface OrderService {
     Order saveOrder(OrderRequestDTO orderRequestDTO,  Long orderId,Long employeeId);
     Order getOrderById(Long id);
     List<Order> getAllOrders(Long companyId);
-    void deleteOrder(Long id);
+    void deleteOrder(Long id, String comments);
     Order findById(Long id);
     double calculateTotal(Order order);
     Order addFoodItemToOrder(Long orderId, Long foodItemId, int quantity);
@@ -30,6 +30,7 @@ public interface OrderService {
     List<Order> getOrdersByType(Long companyId, Order.OrderType orderType);
 
     Set<FoodItemOrder> getAllFoodItemOrdersByOrderId(Long orderId);
+    FoodItemOrder getFoodItemOrderById(Long foodItemOrderId);
     Set<FoodItemOrder> getAllFoodItemOrdersByCompanyId(Long companyId);
     Set<FoodItemOrder> getFoodItemOrdersByStatusAndCompanyId(Long companyId,FoodItemOrder.Status status);
     FoodItemOrder updateFoodItemOrderStatus(Long orderId, Long foodItemId, Long foodItemOrderDetailId, FoodItemOrder.Status status);

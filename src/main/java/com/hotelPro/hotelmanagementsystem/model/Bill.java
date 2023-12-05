@@ -63,13 +63,15 @@ public class Bill implements CompanyAssociatedEntity {
     @JoinColumn(name = "customer_id",nullable = true)
     private Customer customer;
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "discount_id")
+    private Discount discount;
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private Company company;
 
     public Bill(Order order, double amount) {
         this.order = order;
         this.amount = amount;
-       // this.peopleCount = peopleCount;
     }
 // Getters and Setters
 
@@ -153,14 +155,6 @@ public class Bill implements CompanyAssociatedEntity {
         this.paymentMode = paymentMode;
     }
 
-//    public int getPeopleCount() {
-//        return peopleCount;
-//    }
-//
-//    public void setPeopleCount(int peopleCount) {
-//        this.peopleCount = peopleCount;
-//    }
-
     public void setBillCreatedTime(LocalDateTime billCreatedTime) {
         this.billCreatedTime = billCreatedTime;
     }
@@ -179,6 +173,14 @@ public class Bill implements CompanyAssociatedEntity {
 
     public void setCustomer(Customer customer) {
         this.customer = customer;
+    }
+
+    public Discount getDiscount() {
+        return discount;
+    }
+
+    public void setDiscount(Discount discount) {
+        this.discount = discount;
     }
 
     // Calculate the total amount for the bill

@@ -4,10 +4,7 @@ import com.hotelPro.hotelmanagementsystem.controller.DTO.*;
 import com.hotelPro.hotelmanagementsystem.exception.CustomException;
 import com.hotelPro.hotelmanagementsystem.exception.InvalidEnumValueException;
 import com.hotelPro.hotelmanagementsystem.exception.ResourceNotFoundException;
-import com.hotelPro.hotelmanagementsystem.model.Company;
-import com.hotelPro.hotelmanagementsystem.model.RefreshToken;
-import com.hotelPro.hotelmanagementsystem.model.RestaurantSection;
-import com.hotelPro.hotelmanagementsystem.model.User;
+import com.hotelPro.hotelmanagementsystem.model.*;
 import com.hotelPro.hotelmanagementsystem.repository.CompanyRepository;
 import com.hotelPro.hotelmanagementsystem.repository.UserRepository;
 import com.hotelPro.hotelmanagementsystem.service.AuthService;
@@ -26,6 +23,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -71,7 +70,18 @@ public class AuthServiceImpl implements AuthService {
         if (customUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DASHBOARD_USER"))){
             throw new CustomException("Cannot login using Dashboard's username", HttpStatus.BAD_REQUEST);
         }
-        final String jwt = jwtTokenUtil.createToken(authenticationRequest.getUsername(), customUserDetails.getCompany().getId());
+        Subscription subscription = customUserDetails.getSubscription();
+        if(subscription==null) {
+            throw new CustomException("User not subscribed to a plan", HttpStatus.BAD_REQUEST);
+        }
+        LocalDate currentDate = LocalDate.now();
+        LocalDate expiryDate = subscription.getExpiryDate();  // assuming subscription is your Subscription object
+        long daysRemaining = ChronoUnit.DAYS.between(currentDate, expiryDate);
+        System.out.println(daysRemaining);
+        if (daysRemaining <= 0) {
+            throw new CustomException("Subscription plan has expired", HttpStatus.BAD_REQUEST);
+        }
+        final String jwt = jwtTokenUtil.createToken(authenticationRequest.getUsername(), customUserDetails.getCompany().getId(),customUserDetails.getSubscription().getName().toString(),daysRemaining);
 
         // Delete any existing refresh token for the user
         refreshTokenService.deleteByUserId(customUserDetails.getId());
@@ -81,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        return new JwtResponse(jwt, refreshToken.getToken(), customUserDetails.getId(), customUserDetails.getUsername(), customUserDetails.getEmail(), customUserDetails.getMobileNumber(), roles, companyName);
+        return new JwtResponse(jwt, refreshToken.getToken(), customUserDetails.getId(), customUserDetails.getUsername(), customUserDetails.getEmail(), customUserDetails.getMobileNumber(), roles, companyName,subscription.getName().toString());
     }
     @Override
     @Transactional
@@ -100,6 +110,8 @@ public class AuthServiceImpl implements AuthService {
         newUser.setCompany(company);
         newUser.setUsername(userRequestDTO.getUsername());
         newUser.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
+        newUser.setFirstName(userRequestDTO.getFirstName());
+        newUser.setLastName(userRequestDTO.getLastName());
         newUser.setEmail(userRequestDTO.getEmail());
         newUser.setMobileNumber(userRequestDTO.getMobileNumber());
         // Convert roles from String to Role enum and set them
@@ -131,6 +143,8 @@ public class AuthServiceImpl implements AuthService {
         newUser.setCompany(company);
         newUser.setUsername(userRequestForAdminDTO.getUsername());
         newUser.setPassword(passwordEncoder.encode(userRequestForAdminDTO.getPassword()));
+        newUser.setFirstName(userRequestForAdminDTO.getFirstName());
+        newUser.setLastName(userRequestForAdminDTO.getLastName());
         newUser.setEmail(userRequestForAdminDTO.getEmail());
         newUser.setMobileNumber(userRequestForAdminDTO.getMobileNumber());
 
@@ -257,6 +271,8 @@ public class AuthServiceImpl implements AuthService {
         return users.stream().map(user -> new UserResponseDTO(
                 user.getId(),
                 user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
                 user.getEmail(),
                 user.getMobileNumber(),
                 user.getRoles().stream().map(User.Role::name).collect(Collectors.toSet())
@@ -361,7 +377,7 @@ public class AuthServiceImpl implements AuthService {
                     .map(GrantedAuthority::getAuthority)
                     .collect(Collectors.toList());
 
-            return new JwtResponse(jwt, refreshToken.getToken(), customUserDetails.getId(), customUserDetails.getUsername(), customUserDetails.getEmail(), customUserDetails.getMobileNumber(), roles, null); // No single company name for dashboard users
+            return new JwtResponse(jwt, refreshToken.getToken(), customUserDetails.getId(), customUserDetails.getUsername(), customUserDetails.getEmail(), customUserDetails.getMobileNumber(), roles, null,null); // No single company name for dashboard users
         } else {
             // Existing logic for regular users
            // return this.login(authenticationRequest);

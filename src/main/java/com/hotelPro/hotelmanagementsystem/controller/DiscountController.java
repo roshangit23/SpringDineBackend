@@ -36,6 +36,12 @@ public class DiscountController {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new DiscountResponseDTO(discount)));
     }
 
+    @GetMapping("/discountName/{companyId}/{code}")
+    public ResponseEntity<ApiResponse<DiscountResponseDTO>> getDiscountByNameAndCompanyId(@PathVariable Long companyId, @PathVariable String code) {
+        Discount discount = discountService.findByDiscountCodeAndCompanyId(code, companyId);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new DiscountResponseDTO(discount)));
+    }
+
     @GetMapping("/getAll/{companyId}")
     public ResponseEntity<ApiResponse<List<DiscountResponseDTO>>> getAllDiscounts(@PathVariable Long companyId) {
         List<Discount> discounts = discountService.getAllDiscounts(companyId);

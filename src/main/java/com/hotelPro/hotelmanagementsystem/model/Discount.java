@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "discount",
@@ -21,18 +24,19 @@ public class Discount implements CompanyAssociatedEntity {
     @NotNull
     private Double percentage;
 
-    @Enumerated(EnumType.STRING)
-    private Order.OrderType applicableOrderType; // Specific order type to which discount is applicable
+    @Column(name = "applicable_order_type", length = 255)
+    private String applicableOrderTypeString;
 
+    @Column(name = "applicable_payment_mode", length = 255)
+    private String applicablePaymentModeString;
     private Double minimumBillAmount; // Minimum bill amount for discount applicability
-
-    @Enumerated(EnumType.STRING)
-    private Bill.PaymentMode applicablePaymentMode; // Specific payment mode to which discount is applicable
 
     @ManyToMany
     @JoinTable(name = "discount_customers", joinColumns = @JoinColumn(name = "discount_id"),
             inverseJoinColumns = @JoinColumn(name = "customer_id"))
     private Set<Customer> applicableCustomers; // Specific customers to which discount is applicable
+    @OneToMany(mappedBy = "discount", fetch = FetchType.LAZY)
+    private Set<Bill> bills;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private Company company;
@@ -40,12 +44,12 @@ public class Discount implements CompanyAssociatedEntity {
         // default constructor
     }
 
-    public Discount(String discountCode, double percentage, Order.OrderType applicableOrderType, double minimumBillAmount, Bill.PaymentMode applicablePaymentMode, Set<Customer> applicableCustomers) {
+    public Discount(String discountCode, double percentage, Set<Order.OrderType> applicableOrderTypes, Double minimumBillAmount, Set<Bill.PaymentMode> applicablePaymentModes, Set<Customer> applicableCustomers) {
         this.discountCode = discountCode;
         this.percentage = percentage;
-        this.applicableOrderType = applicableOrderType;
+        setApplicableOrderType(applicableOrderTypes);
         this.minimumBillAmount = minimumBillAmount;
-        this.applicablePaymentMode = applicablePaymentMode;
+        setApplicablePaymentMode(applicablePaymentModes);
         this.applicableCustomers = applicableCustomers;
     }
 
@@ -75,12 +79,37 @@ public class Discount implements CompanyAssociatedEntity {
         this.percentage = percentage;
     }
 
-    public Order.OrderType getApplicableOrderType() {
-        return applicableOrderType;
+    public Set<Order.OrderType> getApplicableOrderType() {
+        if (this.applicableOrderTypeString == null || this.applicableOrderTypeString.trim().isEmpty()) {
+            return new HashSet<>();  // return an empty set if the string is null or empty
+        }
+        return Arrays.stream(this.applicableOrderTypeString.split(","))
+                .map(String::trim)
+                .map(Order.OrderType::valueOf)
+                .collect(Collectors.toSet());
     }
 
-    public void setApplicableOrderType(Order.OrderType applicableOrderType) {
-        this.applicableOrderType =applicableOrderType;
+    public void setApplicableOrderType(Set<Order.OrderType> applicableOrderType) {
+        this.applicableOrderTypeString = applicableOrderType.stream()
+                .map(Order.OrderType::name)
+                .collect(Collectors.joining(","));
+    }
+
+    public Set<Bill.PaymentMode> getApplicablePaymentMode() {
+        if (this.applicablePaymentModeString == null || this.applicablePaymentModeString.trim().isEmpty()) {
+            return new HashSet<>();  // return an empty set if the string is null or empty
+        }
+        return new HashSet<>(Arrays.asList(applicablePaymentModeString.split(","))
+                .stream()
+                .map(String::trim)
+                .map(Bill.PaymentMode::valueOf)
+                .collect(Collectors.toSet()));
+    }
+
+    public void setApplicablePaymentMode(Set<Bill.PaymentMode> applicablePaymentMode) {
+        this.applicablePaymentModeString = applicablePaymentMode.stream()
+                .map(Bill.PaymentMode::name)
+                .collect(Collectors.joining(","));
     }
 
     public Double getMinimumBillAmount() {
@@ -91,13 +120,6 @@ public class Discount implements CompanyAssociatedEntity {
         this.minimumBillAmount = minimumBillAmount;
     }
 
-    public Bill.PaymentMode getApplicablePaymentMode() {
-        return applicablePaymentMode;
-    }
-
-    public void setApplicablePaymentMode(Bill.PaymentMode applicablePaymentMode) {
-        this.applicablePaymentMode = applicablePaymentMode;
-    }
 
     public Set<Customer> getApplicableCustomers() {
         return applicableCustomers;
@@ -105,6 +127,14 @@ public class Discount implements CompanyAssociatedEntity {
 
     public void setApplicableCustomers(Set<Customer> applicableCustomers) {
         this.applicableCustomers = applicableCustomers;
+    }
+
+    public Set<Bill> getBills() {
+        return bills;
+    }
+
+    public void setBills(Set<Bill> bills) {
+        this.bills = bills;
     }
 
     public Company getCompany() {

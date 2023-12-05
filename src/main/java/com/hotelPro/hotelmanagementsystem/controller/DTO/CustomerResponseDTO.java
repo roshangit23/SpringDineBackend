@@ -5,6 +5,7 @@ import com.hotelPro.hotelmanagementsystem.model.Customer;
 public class CustomerResponseDTO {
 
     private Long id;
+    private Long customerNo;
     private String name;
     private String phoneNumber;
     private String email;
@@ -17,6 +18,7 @@ public class CustomerResponseDTO {
     // Constructor to populate the DTO from a Customer object
     public CustomerResponseDTO(Customer customer) {
         this.id = customer.getId();
+        this.customerNo = customer.getCustomerNo();
         this.name = customer.getName();
         this.phoneNumber = customer.getPhoneNumber();
         this.email = customer.getEmail();
@@ -55,6 +57,14 @@ public class CustomerResponseDTO {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public Long getCustomerNo() {
+        return customerNo;
+    }
+
+    public void setCustomerNo(Long customerNo) {
+        this.customerNo = customerNo;
     }
 
     public String getAddress() {
