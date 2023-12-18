@@ -90,8 +90,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new CustomException("The subscription does not belong to the specified company", HttpStatus.FORBIDDEN);
         }
 
-        // Disconnect the relationship from both sides
-        //subscription.setCompany(null);
         company.setSubscription(null);
 
         // Save the company to ensure the relationship is updated

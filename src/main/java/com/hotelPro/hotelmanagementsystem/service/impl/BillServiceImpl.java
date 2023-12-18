@@ -114,7 +114,6 @@ public class BillServiceImpl implements BillService {
     @Transactional
     public List<Bill> getAllBills(Long companyId) {
         return billRepository.findByCompanyId(companyId);
-        //return billRepository.findAll();
     }
 
     @Transactional
@@ -130,12 +129,25 @@ public class BillServiceImpl implements BillService {
         billAudit.setCgst(bill.getCgst());
         billAudit.setSgst(bill.getSgst());
         billAudit.setTotalAmount(bill.getTotalAmount());
-        billAudit.setDueAmount(bill.getDueAmount());
-        billAudit.setStatus(bill.getStatus());
-        billAudit.setPaymentMode(bill.getPaymentMode());
+        if (bill.getDueAmount() != null) {
+            billAudit.setDueAmount(bill.getDueAmount());
+        }
+
+        if (bill.getStatus() != null) {
+            billAudit.setStatus(bill.getStatus());
+        }
+
+        if (bill.getPaymentMode() != null) {
+            billAudit.setPaymentMode(bill.getPaymentMode());
+        }
+        billAudit.setOrderId(bill.getOrder() != null ? bill.getOrder().getId() : null);
+        billAudit.setRestaurantTableId(bill.getRestaurantTable() != null ? bill.getRestaurantTable().getId() : null);
+        billAudit.setCustomerId(bill.getCustomer() != null ? bill.getCustomer().getId() : null);
+        billAudit.setDiscountId(bill.getDiscount() != null ? bill.getDiscount().getId() : null);
         billAudit.setBillCreatedTime(bill.getBillCreatedTime());
         billAudit.setDeletedAt(LocalDateTime.now());
         billAudit.setComments(comments);
+        billAudit.setCompany(bill.getCompany());
         billAuditRepository.save(billAudit);
 
         // If you have a bidirectional relationship, disassociate both sides

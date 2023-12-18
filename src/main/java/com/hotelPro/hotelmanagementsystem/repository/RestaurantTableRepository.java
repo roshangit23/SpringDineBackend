@@ -11,14 +11,8 @@ import java.util.Optional;
 public interface RestaurantTableRepository extends JpaRepository<RestaurantTable, Long> {
     // custom methods if required
     Optional<RestaurantTable> findByCategoryAndTableNumber(String category, int tableNumber);
-  //  Optional<RestaurantTable> findByCurrentOrder(Long id);
     List<RestaurantTable> findByCurrentOrderIsNotNull();
-
     List<RestaurantTable> findByCompanyId(Long companyId);
-
     List<RestaurantTable> findByCurrentOrderIsNotNullAndCompanyId(Long companyId);
-
-    //Optional<RestaurantTable> findByTableNumberAndCompanyId(Integer tableNumber, Long companyId);
-
     Optional<RestaurantTable> findByTableNumberAndCategoryAndCompanyId(Integer tableNumber, String category, Long companyId);
 }

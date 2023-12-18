@@ -61,4 +61,13 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
 
     @Query("SELECT b FROM Bill b WHERE b.company.id = :companyId ORDER BY b.billCreatedTime DESC")
     Page<Bill> findLast10Bills(@Param("companyId") Long companyId, Pageable pageable);
+
+    @Query("SELECT COUNT(b) FROM Bill b WHERE b.company.id = :companyId AND b.billCreatedTime BETWEEN :startDate AND :endDate")
+    Long countByCompanyIdAndDateRange(@Param("companyId") Long companyId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    List<Bill> findAllByCompanyIdAndBillCreatedTimeBetweenAndStatus(Long companyId, LocalDateTime startDate, LocalDateTime endDate, Bill.BillStatus status);
+
+    @Query("SELECT SUM(b.dueAmount) FROM Bill b WHERE b.company.id = :companyId AND b.billCreatedTime BETWEEN :startDate AND :endDate")
+    Double sumDueAmountByCompanyAndDateRange(@Param("companyId") Long companyId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
 }

@@ -1,28 +1,31 @@
 package com.hotelPro.hotelmanagementsystem.controller.DTO;
 
-import com.hotelPro.hotelmanagementsystem.model.Employee;
-
 public class EmployeePerformanceDTO {
-
-    private Employee employee;
+    private Long employeeId;
+    private String employeeName; // Add other necessary fields
     private Long orderCount;
 
-    // ...constructors, getters, and setters
 
-    public EmployeePerformanceDTO() {
-    }
-
-    public EmployeePerformanceDTO(Employee employee, Long orderCount) {
-        this.employee = employee;
+    public EmployeePerformanceDTO(Long employeeId, String employeeName, Long orderCount) {
+        this.employeeId = employeeId;
+        this.employeeName = employeeName;
         this.orderCount = orderCount;
     }
 
-    public Employee getEmployee() {
-        return employee;
+    public Long getEmployeeId() {
+        return employeeId;
     }
 
-    public void setEmployee(Employee employee) {
-        this.employee = employee;
+    public void setEmployeeId(Long employeeId) {
+        this.employeeId = employeeId;
+    }
+
+    public String getEmployeeName() {
+        return employeeName;
+    }
+
+    public void setEmployeeName(String employeeName) {
+        this.employeeName = employeeName;
     }
 
     public Long getOrderCount() {
@@ -32,4 +35,5 @@ public class EmployeePerformanceDTO {
     public void setOrderCount(Long orderCount) {
         this.orderCount = orderCount;
     }
+// Getters and setters
 }

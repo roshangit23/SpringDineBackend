@@ -8,6 +8,10 @@ public class DashboardUserRequestDTO {
     @NotBlank
     private String username;
     @NotBlank
+    private String firstName;
+    @NotBlank
+    private String lastName;
+    @NotBlank
     @Size(min = 8, message = "Password should be at least 8 characters.")
     private String password;
     @NotBlank
@@ -21,8 +25,10 @@ public class DashboardUserRequestDTO {
 
     // Constructors, getters, and setters...
 
-    public DashboardUserRequestDTO(String username, String password, String email, String mobileNumber, List<Long> companyIds) {
+    public DashboardUserRequestDTO(String username, String firstName, String lastName, String password, String email, String mobileNumber, List<Long> companyIds) {
         this.username = username;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.password = password;
         this.email = email;
         this.mobileNumber = mobileNumber;
@@ -35,6 +41,22 @@ public class DashboardUserRequestDTO {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getPassword() {

@@ -77,12 +77,14 @@ try {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");
                     sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "No subscriptions found for company with ID: " + companyId);
+                    return;
                 } else {
                     LocalDate currentDate = LocalDate.now();
                         if(subscription.getExpiryDate().isBefore(currentDate)) {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json");
                             sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Subscription with ID: " + subscription.getId() + " has expired.");
+                            return;
                         }
                 }
             }
@@ -111,12 +113,14 @@ try {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                         response.setContentType("application/json");
                         sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "No subscriptions found for company with ID: " + companyId);
+                        return;
                     } else {
                         LocalDate currentDate = LocalDate.now();
                             if(subscription.getExpiryDate().isBefore(currentDate)) {
                                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                                 response.setContentType("application/json");
                                 sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Subscription with ID: " + subscription.getId() + " has expired.");
+                                return;
                             }
                     }
                 }
@@ -139,12 +143,14 @@ try {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");
                     sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "No subscriptions found for company with ID: " + companyId);
+                    return;
                 } else {
                     LocalDate currentDate = LocalDate.now();
                         if(subscription.getExpiryDate().isBefore(currentDate)) {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json");
                             sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Subscription with ID: " + subscription.getId() + " has expired.");
+                            return;
                         }
 
                 }
@@ -175,12 +181,14 @@ try {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                         response.setContentType("application/json");
                         sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "No subscriptions found for company with ID: " + companyId);
+                        return;
                     } else {
                         LocalDate currentDate = LocalDate.now();
                             if(subscription.getExpiryDate().isBefore(currentDate)) {
                                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                                 response.setContentType("application/json");
                                 sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Subscription with ID: " + subscription.getId() + " has expired.");
+                                return;
                             }
                     }
                 }
@@ -195,11 +203,6 @@ try {
     }
     filterChain.doFilter(request, response);
 }
-
-//catch (NullPointerException e) {
-//    sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid token or missing companyId claim");
-//    return;
-//}
 catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
     sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid companyId in path");
     return;
@@ -216,10 +219,10 @@ catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
     sendErrorResponse(response, HttpServletResponse.SC_NOT_FOUND, ex.getMessage());
     return;
 }
-//catch (Exception e) {
-//    sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An unexpected error occurred");
-//    return;
-//}
+catch (Exception e) {
+    sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+    return;
+}
     }
     private void sendErrorResponse(HttpServletResponse response, int status, String errorMessage) throws IOException {
         response.setStatus(status);

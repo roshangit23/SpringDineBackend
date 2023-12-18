@@ -9,7 +9,6 @@ public class RestaurantTableResponseDTO {
     private String category;
     private int tableNumber;
     private Long currentOrderId;
- //   private List<Long> billIds;
 
     // Constructor to transform Entity to DTO
     public RestaurantTableResponseDTO(RestaurantTable restaurantTable) {
@@ -18,7 +17,6 @@ public class RestaurantTableResponseDTO {
         this.category = restaurantTable.getCategory();
         this.tableNumber = restaurantTable.getTableNumber();
         this.currentOrderId = restaurantTable.getCurrentOrderId();
-       // this.billIds = restaurantTable.getBills().stream().map(Bill::getId).collect(Collectors.toList());
     }
 
     // Getters

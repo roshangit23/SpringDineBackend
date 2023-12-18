@@ -1,6 +1,7 @@
 package com.hotelPro.hotelmanagementsystem.service.impl;
 
 import com.hotelPro.hotelmanagementsystem.controller.DTO.*;
+import com.hotelPro.hotelmanagementsystem.exception.CustomException;
 import com.hotelPro.hotelmanagementsystem.model.*;
 import com.hotelPro.hotelmanagementsystem.repository.*;
 import com.hotelPro.hotelmanagementsystem.service.DashboardService;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.util.Pair;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -73,9 +75,9 @@ public class DashboardServiceImpl implements DashboardService {
                 endDate = LocalDateTime.now();
                 break;
             default:
-                throw new IllegalArgumentException("Invalid time period: " + period);
+                throw new CustomException("Invalid time period: " + period, HttpStatus.BAD_REQUEST);
         }
-
+        System.out.println(startDate+" "+ endDate);
         return new DateRange(startDate, endDate);
     }
 
@@ -96,7 +98,7 @@ public class DashboardServiceImpl implements DashboardService {
             case "more than 2hours":
                 return Pair.of(Duration.ofHours(2), Duration.ofDays(1));  // Assuming a maximum duration of 1 day
             default:
-                throw new IllegalArgumentException("Invalid time taken filter: " + timeTaken);
+                throw new CustomException("Invalid time taken filter: " + timeTaken, HttpStatus.BAD_REQUEST);
         }
     }
     @Override
@@ -111,7 +113,7 @@ public class DashboardServiceImpl implements DashboardService {
     public Double calculateAverageOrderValue(Long companyId, String period) {
         DateRange dateRange = getDateRange(period);
         Double totalRevenue = billRepository.calculateRevenue(companyId, dateRange.getStartDate(), dateRange.getEndDate());
-        Long numberOfOrders = orderRepository.countByCompanyIdAndDateRange(companyId, dateRange.getStartDate(), dateRange.getEndDate());
+        Long numberOfOrders = billRepository.countByCompanyIdAndDateRange(companyId, dateRange.getStartDate(), dateRange.getEndDate());
         if (numberOfOrders == 0) {
             return 0.0;  // Avoid division by zero
         }
@@ -122,7 +124,19 @@ public class DashboardServiceImpl implements DashboardService {
     @Transactional
     public Double calculateRevenueByPaymentMode(Long companyId, String period, Bill.PaymentMode paymentMode) {
         DateRange dateRange = getDateRange(period);
-        return billRepository.calculateRevenueByPaymentMode(companyId, dateRange.getStartDate(), dateRange.getEndDate(), paymentMode);
+        List<Bill> settledBills = billRepository.findAllByCompanyIdAndBillCreatedTimeBetweenAndStatus(companyId, dateRange.getStartDate(), dateRange.getEndDate(), Bill.BillStatus.SETTLED);
+        List<Bill> notSettledBills = billRepository.findAllByCompanyIdAndBillCreatedTimeBetweenAndStatus(companyId, dateRange.getStartDate(), dateRange.getEndDate(), Bill.BillStatus.NOT_SETTLED);
+
+        // Combine the lists
+        List<Bill> combinedBills = new ArrayList<>();
+        combinedBills.addAll(settledBills);
+        combinedBills.addAll(notSettledBills);
+
+        // Filter by payment mode and calculate total revenue
+        return combinedBills.stream()
+                .filter(bill -> bill.getPaymentMode().contains(paymentMode))
+                .mapToDouble(Bill::getTotalAmount)
+                .sum();
     }
 
     @Override
@@ -136,12 +150,13 @@ public class DashboardServiceImpl implements DashboardService {
     public Double calculateTotalDueAmount(Long companyId, String period) {
         DateRange dateRange = getDateRange(period);
 
-        // Create a Set containing the DUE PaymentMode
-        Set<Bill.PaymentMode> paymentModes = Collections.singleton(Bill.PaymentMode.DUE);
+        // Call the new repository method to sum due amounts
+        Double totalDueAmount = billRepository.sumDueAmountByCompanyAndDateRange(companyId, dateRange.getStartDate(), dateRange.getEndDate());
 
-        // Pass the paymentModes Set to the calculateTotalDueAmount method
-        return billRepository.calculateTotalDueAmount(companyId, paymentModes, dateRange.getStartDate(), dateRange.getEndDate());
+        // Handle the case where totalDueAmount is null (i.e., there are no dues)
+        return totalDueAmount != null ? totalDueAmount : 0.0;
     }
+
     @Override
     @Transactional
     public List<TopCustomerDTO> getTopCustomersByOrderFrequency(Long companyId, String period) {
@@ -168,8 +183,10 @@ public class DashboardServiceImpl implements DashboardService {
     @Transactional
     public Double calculateAverageOrderCompletionTime(Long companyId, String period) {
         DateRange dateRange = getDateRange(period);
-        return orderRepository.findAverageOrderCompletionTime(companyId, dateRange.getStartDate(), dateRange.getEndDate());
+        Double averageSeconds = orderRepository.findAverageOrderCompletionTime(companyId, dateRange.getStartDate(), dateRange.getEndDate());
+        return averageSeconds != null ? averageSeconds / 60 : null;
     }
+
     @Override
     @Transactional
     public List<HourlyOrderCount> getPeakOrderTimes(Long companyId, String period) {
@@ -280,14 +297,22 @@ public class DashboardServiceImpl implements DashboardService {
     public List<EmployeePerformanceDTO> getEmployeePerformance(Long companyId, String period) {
         DateRange dateRange = getDateRange(period);
         List<Object[]> result = orderRepository.findOrderCountByEmployee(companyId, dateRange.getStartDate(), dateRange.getEndDate());
+
         return result.stream()
-                .map(obj -> new EmployeePerformanceDTO((Employee) obj[0], ((Number) obj[1]).longValue()))
+                .map(obj -> new EmployeePerformanceDTO(
+                        (Long) obj[0],  // employeeId
+                        (String) obj[1], // employeeName
+                        ((Number) obj[2]).longValue())) // orderCount
                 .collect(Collectors.toList());
     }
+
     @Override
     @Transactional
     public List<IngredientUsageDTO> getMostUsedIngredients(Long companyId, String period) {
         DateRange dateRange = getDateRange(period);
+        System.out.println("Ingredients "+foodItemInventoryRepository.findMostUsedIngredients(
+                dateRange.getStartDate(), dateRange.getEndDate(), companyId
+        ).toString());
         return mapToDTO(foodItemInventoryRepository.findMostUsedIngredients(
                 dateRange.getStartDate(), dateRange.getEndDate(), companyId
         ));

@@ -41,15 +41,6 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             }
             filterChain.doFilter(request, response);
         } catch (CustomException ex) {
-//            response.setStatus(ex.getStatus().value());
-//            response.setContentType("application/json");
-//
-//            CustomErrorResponse errorResponse = new CustomErrorResponse();
-//            errorResponse.setStatus(ex.getStatus().value());
-//            errorResponse.setError(ex.getMessage());
-//
-//            String jsonResponse = objectMapper.writeValueAsString(errorResponse);
-//            response.getWriter().write(jsonResponse);
             sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Expired or invalid JWT token");
         }
      catch (ExpiredJwtException e) {

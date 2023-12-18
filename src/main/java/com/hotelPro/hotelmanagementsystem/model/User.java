@@ -36,10 +36,6 @@ public class User implements CompanyAssociatedEntity {
     @Enumerated(EnumType.STRING)
     private Set<Role> roles;
 
-//    @OneToOne
-//    @JoinColumn(name = "employee_id")
-//    private Employee employee;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private Company company;

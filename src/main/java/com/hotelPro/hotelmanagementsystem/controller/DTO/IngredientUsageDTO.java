@@ -4,22 +4,23 @@ import com.hotelPro.hotelmanagementsystem.model.Inventory;
 
 public class IngredientUsageDTO {
 
-    private Inventory inventory;
+    private long inventoryId;
     private Integer usage;
 
     // ...constructors, getters, and setters
 
     public IngredientUsageDTO(Inventory inventory, Integer usage) {
-        this.inventory = inventory;
+        inventoryId = inventory.getId();
         this.usage = usage;
     }
 
-    public Inventory getInventory() {
-        return inventory;
+
+    public long getInventoryId() {
+        return inventoryId;
     }
 
-    public void setInventory(Inventory inventory) {
-        this.inventory = inventory;
+    public void setInventoryId(long inventoryId) {
+        this.inventoryId = inventoryId;
     }
 
     public Integer getUsage() {

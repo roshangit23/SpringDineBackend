@@ -7,6 +7,12 @@ public class TopCustomerByValueDTO {
 
     public TopCustomerByValueDTO() {
     }
+
+    public TopCustomerByValueDTO(Long customerId, String customerName, Double totalBillValue) {
+        this.customerId = customerId;
+        this.customerName = customerName;
+        this.totalBillValue = totalBillValue;
+    }
     // Getters and setters
 
     public Long getCustomerId() {

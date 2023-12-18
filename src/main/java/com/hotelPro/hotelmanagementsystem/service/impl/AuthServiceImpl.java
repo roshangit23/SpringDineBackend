@@ -266,7 +266,7 @@ public class AuthServiceImpl implements AuthService {
             throw new CustomException("You don't have permission to view users from this company.", HttpStatus.FORBIDDEN);
         }
 
-        List<User> users = userRepository.findByCompanyId(companyId);
+        List<User> users = userRepository.findByCompanyDirectlyOrIndirectly(companyId);
 
         return users.stream().map(user -> new UserResponseDTO(
                 user.getId(),
@@ -289,6 +289,8 @@ public class AuthServiceImpl implements AuthService {
         User newUser = new User();
         newUser.setUsername(dashboardUserRequestDTO.getUsername());
         newUser.setPassword(passwordEncoder.encode(dashboardUserRequestDTO.getPassword()));
+        newUser.setFirstName(dashboardUserRequestDTO.getFirstName());
+        newUser.setLastName(dashboardUserRequestDTO.getLastName());
         newUser.setEmail(dashboardUserRequestDTO.getEmail());
         newUser.setMobileNumber(dashboardUserRequestDTO.getMobileNumber());
        // Fetch the companies and associate them with the user
@@ -379,8 +381,6 @@ public class AuthServiceImpl implements AuthService {
 
             return new JwtResponse(jwt, refreshToken.getToken(), customUserDetails.getId(), customUserDetails.getUsername(), customUserDetails.getEmail(), customUserDetails.getMobileNumber(), roles, null,null); // No single company name for dashboard users
         } else {
-            // Existing logic for regular users
-           // return this.login(authenticationRequest);
             throw new CustomException("Please login using dashboard's username", HttpStatus.BAD_REQUEST);
         }
     }

@@ -40,22 +40,22 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return true; // You can add logic to check if the account is expired
+        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true; // You can add logic to check if the account is locked
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true; // You can add logic to check if the credentials are expired
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return true; // You can add logic to check if the account is enabled
+        return true;
     }
 
     public Long getId() {
@@ -75,7 +75,6 @@ public class CustomUserDetails implements UserDetails {
     }
     public List<Company> getCompanies() {
         return new ArrayList<>(user.getCompanies());
-        // return user.getCompanies().stream().collect(Collectors.toList());
     }
     public Subscription getSubscription() {
         return user.getCompany().getSubscription();

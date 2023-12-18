@@ -8,6 +8,12 @@ public class TopCustomerDTO {
     public TopCustomerDTO() {
     }
 
+    public TopCustomerDTO(Long customerId, String customerName, Long orderCount) {
+        this.customerId = customerId;
+        this.customerName = customerName;
+        this.orderCount = orderCount;
+    }
+
     public Long getCustomerId() {
         return customerId;
     }

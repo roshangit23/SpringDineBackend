@@ -32,10 +32,8 @@ public class OrderServiceImpl implements OrderService {
     private FoodItemRepository foodItemRepository;
     @Autowired
     private FoodItemOrderRepository foodItemOrderRepository;
-
     @Autowired
     private FoodItemOrderDetailRepository foodItemOrderDetailRepository;
-
     @Autowired
     private InventoryRepository inventoryRepository;
     @Autowired
@@ -52,8 +50,7 @@ public class OrderServiceImpl implements OrderService {
     private CustomerService customerService;
     @Autowired
     private FoodItemService foodItemService;
-    //    @Autowired
-//    private RestaurantTableService restaurantTableService;
+
     @Autowired
     private CompanyRepository companyRepository;
 
@@ -131,8 +128,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void updateOrderFromDTO(Order order, OrderRequestDTO orderRequestDTO) {
-        // You already have the logic for this in your convertToEntity function.
-        // Extract the updating parts to this method.
         if(orderRequestDTO.getComments()!=null){
             order.setComments(orderRequestDTO.getComments());
         }
@@ -163,9 +158,6 @@ public class OrderServiceImpl implements OrderService {
             throw new CustomException("Restaurant section is mandatory", HttpStatus.BAD_REQUEST);
         }
 
-        // For customerId and employeeId we can't set directly to the order
-        // we need to fetch the corresponding Customer and Employee entities from the database
-        // and set them to the order
         if (orderRequestDTO.getCustomerId() != null) {
             Customer customer = customerRepository.findById(orderRequestDTO.getCustomerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", orderRequestDTO.getCustomerId()));
@@ -177,11 +169,6 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", orderRequestDTO.getEmployeeId()));
             order.setAssignedEmployee(employee);
         }
-
-        // Set<FoodItemOrder> requires a bit more complex handling
-        // As we can't just set DTO fields into entity
-        // We should create new FoodItemOrder entities with appropriate links
-        // Here we suppose that FoodItemOrderDTO has a field foodItemId to link it with FoodItem
 
         if (orderRequestDTO.getFoodItemOrders() != null) {
             for (FoodItemOrderDTO foodItemOrderDTO : orderRequestDTO.getFoodItemOrders()) {
@@ -268,18 +255,17 @@ public class OrderServiceImpl implements OrderService {
     public Order saveNewOrder(OrderRequestDTO orderRequestDTO, Long companyId) {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company", "id", companyId));
-        //return saveOrder(orderRequestDTO,orderId, null);
         Order order = convertToEntity(orderRequestDTO,company);
         if (order.getFoodItemOrders() != null) {
             for (FoodItemOrder foodItemOrder : order.getFoodItemOrders()) {
-                foodItemOrder.setOrder(order);  // Explicitly set the Order in the FoodItemOrder
+                foodItemOrder.setOrder(order);
             }
         }
         return orderRepository.save(order);
     }
     @Override
     @Transactional
-    public Order saveOrder(OrderRequestDTO orderRequestDTO, Long orderId, Long employeeId) {
+    public Order saveOrder(OrderRequestDTO orderRequestDTO, Long orderId) {
 
         // If orderId is provided, then it's an update. Fetch the existing order.
         Order order = orderRepository.findById(orderId)
@@ -291,12 +277,6 @@ public class OrderServiceImpl implements OrderService {
             throw new CustomException("Cannot update order that is already billed", HttpStatus.BAD_REQUEST);
         }
         updateOrderFromDTO(order, orderRequestDTO);  // Update the existing order with the DTO data
-
-        if (employeeId != null) {
-            Employee employee = employeeRepository.findById(employeeId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
-            order.setAssignedEmployee(employee);
-        }
 
         // Check if customer details are mandatory
         if (order.getType() == Order.OrderType.DELIVERY) {
@@ -341,8 +321,6 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public Order getOrderById(Long id) {
-        //Optional<Order> optionalOrder = orderRepository.findById(id);
-        //return optionalOrder.orElse(null);
         return orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
     }
@@ -351,7 +329,6 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public List<Order> getAllOrders(Long companyId) {
         return orderRepository.findByCompanyId(companyId);
-        //return orderRepository.findAll();
     }
 
     @Override
@@ -365,25 +342,54 @@ public class OrderServiceImpl implements OrderService {
 
         // Copy data from Order to OrderAudit
         OrderAudit orderAudit = new OrderAudit();
+
         orderAudit.setOrderNo(order.getOrderNo());
         orderAudit.setStatus(order.getStatus());
         orderAudit.setType(order.getType());
-        orderAudit.setCustomerCount(order.getCustomer_count());
-        orderAudit.setStartTime(order.getStartTime());
-        orderAudit.setEndTime(order.getEndTime());
-        orderAudit.setCompanyId(order.getCompany().getId());
-        orderAudit.setCustomerId(order.getCustomer().getId());
-        orderAudit.setEmployeeId(order.getAssignedEmployee().getId());
-        orderAudit.setOrderComments(order.getComments());
+        orderAudit.setCompany(order.getCompany());
+
+        // Check for null before setting
+        if (order.getCustomer_count() != null) {
+            orderAudit.setCustomerCount(order.getCustomer_count());
+        }
+        if (order.getStartTime() != null) {
+            orderAudit.setStartTime(order.getStartTime());
+        }
+        if (order.getEndTime() != null) {
+            orderAudit.setEndTime(order.getEndTime());
+        }
+        if (order.getCustomer() != null && order.getCustomer().getId() != null) {
+            orderAudit.setCustomerId(order.getCustomer().getId());
+        }
+        if (order.getAssignedEmployee() != null && order.getAssignedEmployee().getId() != null) {
+            orderAudit.setEmployeeId(order.getAssignedEmployee().getId());
+        }
+        if (order.getComments() != null) {
+            orderAudit.setOrderComments(order.getComments());
+        }
+        if (order.getRestaurantSection() != null) {
+            orderAudit.setRestaurantSectionId(order.getRestaurantSection().getId());
+        }
+        if (order.getRestaurantTable() != null) {
+            orderAudit.setRestaurantTableId(order.getRestaurantTable().getId());
+        }
+        if (order.getFoodItemOrders() != null) {
+            String foodItemOrdersSummary = order.getFoodItemOrders().toString();
+            orderAudit.setFoodItemOrdersSummary(foodItemOrdersSummary);
+        } else {
+            orderAudit.setFoodItemOrdersSummary("N/A"); // Or any other default value you see fit
+        }
+
         orderAudit.setDeletedAt(LocalDateTime.now());
         orderAudit.setComments(comments);
 
+        // Now save the orderAudit object
         orderAuditRepository.save(orderAudit);
 
-        // Now delete the order
+        // Then delete the order
         orderRepository.deleteById(id);
-    }
 
+    }
     @Override
     @Transactional
     public Order findById(Long id) {
@@ -396,12 +402,11 @@ public class OrderServiceImpl implements OrderService {
     public double calculateTotal(Order order) {
         double total = 0.0;
         Set<FoodItemOrder> foodItemOrders = order.getFoodItemOrders();
-        System.out.println("***********************************************"+foodItemOrders.size()+"***********************************************");
-
+        if(foodItemOrders.size()==0){
+            throw new CustomException("NO foodItems present in this order", HttpStatus.BAD_REQUEST);
+        }
         for (FoodItemOrder itemOrder : foodItemOrders) {
             total += itemOrder.getQuantity() * itemOrder.getFoodItem().getItemPrice();
-            System.out.println("***********************************************"+total+"***********************************************");
-
         }
         return total;
     }
@@ -531,9 +536,6 @@ public class OrderServiceImpl implements OrderService {
     public Order updateOrderStatus(Long orderId, String status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
-//        if(order.getStatus()== Order.Status.COMPLETED || order.getStatus()== Order.Status.MERGED || order.getStatus()== Order.Status.REMOVED_WITHOUT_CREATING){
-//            throw new CustomException("Order cannot be updated once order is completed, merged or removed", HttpStatus.BAD_REQUEST);
-//        }
         if (order.getBill() != null) {
             throw new CustomException("Cannot update order that is already billed",HttpStatus.BAD_REQUEST);
         }
@@ -604,18 +606,6 @@ public class OrderServiceImpl implements OrderService {
         if (applicableOrderTypes != null && !applicableOrderTypes.isEmpty() && !applicableOrderTypes.contains(order.getType())) {
             return discountAmount;
         }
-//// Check if the discount is applicable for the specific order type
-//        if (discount.getApplicableOrderType().isPresent()) {
-//            Order.OrderType applicableOrderType = discount.getApplicableOrderType().get();
-//            if (applicableOrderType != order.getType()) {
-//                discountAmount = 0.0;
-//            }
-//        }
-
-        // Check if the discount is applicable for the specific customer
-//        if (discount.getApplicableCustomers() != null && !discount.getApplicableCustomers().contains(order.getCustomer())) {
-//            return discountAmount;
-//        }
 
         // Check if the discount is applicable based on the minimum bill amount
         if (discount.getMinimumBillAmount() != null && discount.getMinimumBillAmount() > 0 && calculateTotal(order) < discount.getMinimumBillAmount()) {

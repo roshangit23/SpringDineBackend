@@ -10,10 +10,8 @@ import java.util.Map;
 public interface BillService {
     Bill saveBill(Order order, Discount discount);
     Bill getBillById(Long id);
-    //List<Bill> getAllBills();
     List<Bill> getAllBills(Long companyId);
     void deleteBill(Long id,String comments);
     Bill settleBill(Long billId, Map<Bill.PaymentMode, Double> paymentModes);
-
     Bill findByBillNoAndCompanyId(Long billNo, Long companyId);
 }

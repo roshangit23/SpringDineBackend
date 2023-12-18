@@ -30,10 +30,7 @@ public class RestaurantTable implements CompanyAssociatedEntity {
     @Column(name = "table_number", nullable = false)
     private Integer tableNumber;
 
-//    @OneToMany(mappedBy = "restaurantTable", cascade = CascadeType.ALL)
-//    private List<Order> orders;
-
-    @OneToOne(/*mappedBy = "restaurantTable",*/fetch=FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch=FetchType.LAZY, cascade = CascadeType.ALL)
     private Order currentOrder;
     @JsonGetter("current_order_id")
     public Long getCurrentOrderId() {

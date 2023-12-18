@@ -9,6 +9,11 @@ public class HourlyOrderCount {
     public HourlyOrderCount() {
     }
 
+    public HourlyOrderCount(Integer hour, Long orderCount) {
+        this.hour = hour;
+        this.orderCount = orderCount;
+    }
+
     public Integer getHour() {
         return hour;
     }

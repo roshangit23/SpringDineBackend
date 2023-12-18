@@ -1,64 +1,48 @@
-package com.hotelPro.hotelmanagementsystem.model;
+package com.hotelPro.hotelmanagementsystem.controller.DTO;
 
-import jakarta.persistence.*;
+import com.hotelPro.hotelmanagementsystem.model.Order;
+import com.hotelPro.hotelmanagementsystem.model.OrderAudit;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "order_audit")
-public class OrderAudit {
+public class OrderAuditResponseDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "order_no")
     private Long orderNo;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
     private Order.Status status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type")
     private Order.OrderType type;
-
-    @Column(name = "comments")
     private String comments;
-
-    @Column(name = "customer_count")
     private Integer customerCount;
-
-    @Column(name = "start_time")
     private LocalDateTime startTime;
-
-    @Column(name = "end_time")
     private LocalDateTime endTime;
-
-    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-
-    @Column(name = "order_comments")
     private String orderComments;
-
-    @Column(name = "restaurant_section_id")
     private Long restaurantSectionId;
-
-    @Column(name = "restaurant_table_id")
     private Long restaurantTableId;
-
-    @Lob
-    @Column(name = "food_item_orders_summary")
     private String foodItemOrdersSummary;
-    @Column(name = "customer_id")
     private Long customerId;
-
-    @Column(name = "employee_id")
     private Long employeeId;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id")
-    private Company company;
-    public OrderAudit() {
+
+    // Constructors
+    public OrderAuditResponseDTO() {
+    }
+
+    public OrderAuditResponseDTO(OrderAudit orderAudit) {
+        this.id = orderAudit.getId();
+        this.orderNo = orderAudit.getOrderNo();
+        this.status = orderAudit.getStatus();
+        this.type = orderAudit.getType();
+        this.comments = orderAudit.getComments();
+        this.customerCount = orderAudit.getCustomerCount();
+        this.startTime = orderAudit.getStartTime();
+        this.endTime = orderAudit.getEndTime();
+        this.deletedAt = orderAudit.getDeletedAt();
+        this.orderComments = orderAudit.getOrderComments();
+        this.restaurantSectionId = orderAudit.getRestaurantSectionId();
+        this.restaurantTableId = orderAudit.getRestaurantTableId();
+        this.foodItemOrdersSummary = orderAudit.getFoodItemOrdersSummary();
+        this.customerId = orderAudit.getCustomerId();
+        this.employeeId = orderAudit.getEmployeeId();
     }
 
     public Long getId() {
@@ -141,29 +125,6 @@ public class OrderAudit {
         this.orderComments = orderComments;
     }
 
-    public Company getCompany() {
-        return company;
-    }
-
-    public void setCompany(Company company) {
-        this.company = company;
-    }
-
-    public Long getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(Long customerId) {
-        this.customerId = customerId;
-    }
-
-    public Long getEmployeeId() {
-        return employeeId;
-    }
-
-    public void setEmployeeId(Long employeeId) {
-        this.employeeId = employeeId;
-    }
     public Long getRestaurantSectionId() {
         return restaurantSectionId;
     }
@@ -187,5 +148,41 @@ public class OrderAudit {
     public void setFoodItemOrdersSummary(String foodItemOrdersSummary) {
         this.foodItemOrdersSummary = foodItemOrdersSummary;
     }
-}
 
+    public Long getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(Long customerId) {
+        this.customerId = customerId;
+    }
+
+    public Long getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(Long employeeId) {
+        this.employeeId = employeeId;
+    }
+
+    @Override
+    public String toString() {
+        return "OrderAuditResponseDTO{" +
+                "id=" + id +
+                ", orderNo=" + orderNo +
+                ", status=" + status +
+                ", type=" + type +
+                ", comments='" + comments + '\'' +
+                ", customerCount=" + customerCount +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
+                ", deletedAt=" + deletedAt +
+                ", orderComments='" + orderComments + '\'' +
+                ", restaurantSectionId=" + restaurantSectionId +
+                ", restaurantTableId=" + restaurantTableId +
+                ", foodItemOrdersSummary='" + foodItemOrdersSummary + '\'' +
+                ", customerId=" + customerId +
+                ", employeeId=" + employeeId +
+                '}';
+    }
+}

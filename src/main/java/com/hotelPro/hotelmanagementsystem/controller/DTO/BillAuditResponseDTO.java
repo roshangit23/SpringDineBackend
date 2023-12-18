@@ -1,76 +1,51 @@
-package com.hotelPro.hotelmanagementsystem.model;
+package com.hotelPro.hotelmanagementsystem.controller.DTO;
 
-import jakarta.persistence.*;
+import com.hotelPro.hotelmanagementsystem.model.Bill;
+import com.hotelPro.hotelmanagementsystem.model.BillAudit;
 
 import java.time.LocalDateTime;
 import java.util.Set;
 
-@Entity
-@Table(name = "bill_audit")
-public class BillAudit {
+public class BillAuditResponseDTO {
 
-
-    public enum BillStatus {
-        SETTLED, NOT_SETTLED
-    }
-    public enum PaymentMode {
-        CASH, CARD, DUE, OTHER, PART
-    }
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "bill_no")
     private Long billNo;
-
-    @Column(name = "amount")
     private double amount;
-
-    @Column(name = "cgst")
     private double cgst;
-
-    @Column(name = "sgst")
     private double sgst;
-
-    @Column(name = "total_amount")
     private double totalAmount;
-
-    @Column(name = "due_amount")
     private Double dueAmount;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
     private Bill.BillStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_mode")
     private Set<Bill.PaymentMode> paymentMode;
-    @Column(name = "order_id")
     private Long orderId;
-
-    @Column(name = "restaurant_table_id")
     private Long restaurantTableId;
-
-    @Column(name = "customer_id")
     private Long customerId;
-
-    @Column(name = "discount_id")
     private Long discountId;
-    @Column(name = "bill_created_time", updatable = false)
     private LocalDateTime billCreatedTime;
-
-    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-
-    @Column(name = "comments")
     private String comments;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id")
-    private Company company;
 
+    // Constructors
+    public BillAuditResponseDTO() {
+    }
 
-    // Constructors, getters, setters, etc.
-    public BillAudit() {
+    public BillAuditResponseDTO(BillAudit billAudit) {
+        this.id = billAudit.getId();
+        this.billNo = billAudit.getBillNo();
+        this.amount = billAudit.getAmount();
+        this.cgst = billAudit.getCgst();
+        this.sgst = billAudit.getSgst();
+        this.totalAmount = billAudit.getTotalAmount();
+        this.dueAmount = billAudit.getDueAmount();
+        this.status = billAudit.getStatus();
+        this.paymentMode = billAudit.getPaymentMode();
+        this.orderId = billAudit.getOrderId();
+        this.restaurantTableId = billAudit.getRestaurantTableId();
+        this.customerId = billAudit.getCustomerId();
+        this.discountId = billAudit.getDiscountId();
+        this.billCreatedTime = billAudit.getBillCreatedTime();
+        this.deletedAt = billAudit.getDeletedAt();
+        this.comments = billAudit.getComments();
     }
 
     public Long getId() {
@@ -200,11 +175,26 @@ public class BillAudit {
     public void setComments(String comments) {
         this.comments = comments;
     }
-    public Company getCompany() {
-        return company;
-    }
 
-    public void setCompany(Company company) {
-        this.company = company;
+    @Override
+    public String toString() {
+        return "BillAuditResponseDTO{" +
+                "id=" + id +
+                ", billNo=" + billNo +
+                ", amount=" + amount +
+                ", cgst=" + cgst +
+                ", sgst=" + sgst +
+                ", totalAmount=" + totalAmount +
+                ", dueAmount=" + dueAmount +
+                ", status=" + status +
+                ", paymentMode=" + paymentMode +
+                ", orderId=" + orderId +
+                ", restaurantTableId=" + restaurantTableId +
+                ", customerId=" + customerId +
+                ", discountId=" + discountId +
+                ", billCreatedTime=" + billCreatedTime +
+                ", deletedAt=" + deletedAt +
+                ", comments='" + comments + '\'' +
+                '}';
     }
 }

@@ -1,6 +1,7 @@
 package com.hotelPro.hotelmanagementsystem.service.impl;
 
 import com.hotelPro.hotelmanagementsystem.controller.DTO.DiscountRequestDTO;
+import com.hotelPro.hotelmanagementsystem.exception.CustomException;
 import com.hotelPro.hotelmanagementsystem.exception.InvalidEnumValueException;
 import com.hotelPro.hotelmanagementsystem.exception.ResourceNotFoundException;
 import com.hotelPro.hotelmanagementsystem.model.*;
@@ -10,6 +11,7 @@ import com.hotelPro.hotelmanagementsystem.service.DiscountService;
 import com.hotelPro.hotelmanagementsystem.service.OrderService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -156,19 +158,13 @@ public class DiscountServiceImpl implements DiscountService {
         double total = orderService.calculateTotal(order);
         double discountAmount = orderService.calculateDiscount(order, discount);
         if (discountAmount <= 0) {
-            throw new IllegalArgumentException("The provided discount is not valid for this order");
+            throw new CustomException("The provided discount is not valid for this order", HttpStatus.BAD_REQUEST);
         }
         return total - discountAmount;
-    }
-    @Override
-    public Discount getDiscountByCode(String code) {
-        return discountRepository.findBydiscountCode(code)
-                .orElseThrow(() -> new ResourceNotFoundException("Discount", "code", code));
     }
 
     @Override
     public List<Discount> getAllDiscounts(Long companyId) {
         return discountRepository.findByCompanyId(companyId);
-    //return discountRepository.findAll();
     }
 }

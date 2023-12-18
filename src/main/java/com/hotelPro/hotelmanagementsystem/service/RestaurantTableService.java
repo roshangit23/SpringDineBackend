@@ -13,18 +13,9 @@ public interface RestaurantTableService {
     RestaurantTable freeTable(Long tableId);
     RestaurantTable.TableStatus getTableStatusById(Long tableId);
     double mergeOrders(List<Long> tableIds);
-
     List<RestaurantTable> getAllTables(Long companyId);
-
     RestaurantTable getTableById(Long tableId);
-
     RestaurantTable updateTable(Long tableId, String category, Integer tableNumber);
-
-    //RestaurantTable findByTableNumberAndCompanyId(Integer tableNumber, Long companyId);
-
     void deleteRestaurantTable(Long id);
-
     RestaurantTable findByTableNumberCategoryAndCompanyId(Integer tableNumber, String category, Long companyId);
-
-//    RestaurantTable getTableByOrderId(Long id);
 }

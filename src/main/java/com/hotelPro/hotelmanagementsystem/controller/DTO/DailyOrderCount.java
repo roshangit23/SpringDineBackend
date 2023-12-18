@@ -4,6 +4,11 @@ public class DailyOrderCount {
     private Integer day;
     private Long orderCount;
 
+    public DailyOrderCount(Integer day, Long orderCount) {
+        this.day = day;
+        this.orderCount = orderCount;
+    }
+
     // getters and setters...
     public DailyOrderCount() {
     }

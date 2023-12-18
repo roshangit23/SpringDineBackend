@@ -68,8 +68,8 @@ public class FoodItemServiceImpl implements FoodItemService {
                 }
                 // Set the validated inventory to the foodItemInventory
                 foodItemInventory.setInventory(validatedInventory);
-                foodItemInventory.setRequiredQuantity(requiredQuantity); // This might be redundant if it's already set, but just to be sure
-                foodItemInventory.setFoodItem(foodItem); // Ensure the relationship is set
+                foodItemInventory.setRequiredQuantity(requiredQuantity);
+                foodItemInventory.setFoodItem(foodItem);
             }
         }
 
@@ -132,7 +132,7 @@ public FoodItem findByItemNameAndCompanyId(String itemName, Long companyId) {
         if (foodItemDetails.getDescription() != null && !foodItemDetails.getDescription().isEmpty()) {
             foodItem.setDescription(foodItemDetails.getDescription());
         }
-        if (foodItemDetails.getItemPrice() != null && foodItemDetails.getItemPrice() > 0.0) { // assuming 0.0 is not a valid item price
+        if (foodItemDetails.getItemPrice() != null && foodItemDetails.getItemPrice() > 0.0) {
             foodItem.setItemPrice(foodItemDetails.getItemPrice());
         }
         if (foodItemDetails.getCategory() != null && !foodItemDetails.getCategory().isEmpty()) {
@@ -169,8 +169,8 @@ public FoodItem findByItemNameAndCompanyId(String itemName, Long companyId) {
 
                 // Set the validated inventory to the foodItemInventory
                 foodItemInventory.setInventory(validatedInventory);
-                foodItemInventory.setRequiredQuantity(requiredQuantity); // This might be redundant if it's already set, but just to be sure
-                foodItemInventory.setFoodItem(foodItem); // Ensure the relationship is set
+                foodItemInventory.setRequiredQuantity(requiredQuantity);
+                foodItemInventory.setFoodItem(foodItem);
 
                 // Add the foodItemInventory to the food item's list
                 foodItem.getRequiredInventoryItems().add(foodItemInventory);

@@ -25,9 +25,6 @@ public class OrderResponseDTO {
         this.orderNo = order.getOrderNo();
         this.status = order.getStatus();
         this.type = order.getType();
-//        if(order.getRestaurantSection()!=null){
-//            this.restaurantSectionId = order.getRestaurantSection().getId();
-//        }
         this.restaurantType = order.getCompany().getRestaurantSections().stream()
                 .map(RestaurantSection::getRestaurantType)
                 .collect(Collectors.toSet());
@@ -86,14 +83,6 @@ public class OrderResponseDTO {
     public void setType(Order.OrderType type) {
         this.type = type;
     }
-
-//    public Long getRestaurantSectionId() {
-//        return restaurantSectionId;
-//    }
-//
-//    public void setRestaurantSectionId(Long restaurantSectionId) {
-//        this.restaurantSectionId = restaurantSectionId;
-//    }
 
     public Set<RestaurantSection.RestaurantType> getRestaurantType() {
         return restaurantType;

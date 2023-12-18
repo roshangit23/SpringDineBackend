@@ -47,8 +47,6 @@ public class ValidationAspect {
     public void validateOrder(JoinPoint joinPoint, OrderRequestDTO orderRequest) {
         // Extract companyIds based on user role
         List<Long> companyIdsForUser = getCompanyIdsForUser();
-        System.out.println("companyIdsForUser "+companyIdsForUser);
-       //System.out.println("companyIdsForUser element type: " + companyIdsForUser.get(0).getClass().getName());
         if (orderRequest.getFoodItemOrders() != null || !orderRequest.getFoodItemOrders().isEmpty()) {
             for (FoodItemOrderDTO foodItemOrderDTO : orderRequest.getFoodItemOrders()) {
                 if (foodItemOrderDTO != null && foodItemOrderDTO.getFoodItemId() != null) {

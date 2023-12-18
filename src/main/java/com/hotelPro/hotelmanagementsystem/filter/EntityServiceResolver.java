@@ -285,14 +285,6 @@ public class EntityServiceResolver {
                     entities.add(foodItem);
                 }
             }
-            // Pattern to match /foodItems/name/{name}
-//            else if (path.startsWith("/foodItems/name/")) {
-//                String foodItemName = path.split("/")[3];
-//                FoodItem foodItem = foodItemService.findByItemName(foodItemName);
-//                if (foodItem != null) {
-//                    entities.add(foodItem);
-//                }
-//            }
         }
         // Handle PUT methods
         else if ("PUT".equalsIgnoreCase(method)) {
@@ -457,19 +449,6 @@ public class EntityServiceResolver {
                 Order order = orderService.findById(orderId);
                 if (order != null) {
                     entities.add(order);
-                }
-            }
-            // Pattern to match /orders/saveWithEmployee/{orderId}/{employeeId}
-            else if (path.matches("/orders/saveWithEmployee/\\d+/\\d+")) {
-                Long orderId = extractIdFromPath(path, 3);
-                Long employeeId = extractIdFromPath(path, 4);
-                Order order = orderService.findById(orderId);
-                Employee employee = employeeService.getEmployeeById(employeeId);
-                if (order != null) {
-                    entities.add(order);
-                }
-                if (employee != null) {
-                    entities.add(employee);
                 }
             }
         }

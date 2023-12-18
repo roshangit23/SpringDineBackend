@@ -34,7 +34,7 @@ public class BillController {
                                                                    @RequestParam(required = false) Long discountId) {
         Order order = orderService.findById(orderId);
 
-        Discount discount = null; // Initialize discount as null
+        Discount discount = null;
 
         // Only fetch discount if a discountId is provided
         if(discountId != null) {

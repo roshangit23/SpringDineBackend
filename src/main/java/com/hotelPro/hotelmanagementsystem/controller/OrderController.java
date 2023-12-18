@@ -29,7 +29,7 @@ public class OrderController {
     @PostMapping("/{orderId}")
     @ValidateOrderRequest
     public ResponseEntity<ApiResponse<OrderResponseDTO>> saveOrder(@Valid @RequestBody OrderRequestDTO orderRequestDTO, @PathVariable Long orderId) {
-        Order savedOrder = orderService.saveOrder(orderRequestDTO, orderId, null);
+        Order savedOrder = orderService.saveOrder(orderRequestDTO, orderId);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new OrderResponseDTO(savedOrder)));
     }
 
@@ -37,13 +37,6 @@ public class OrderController {
     @ValidateOrderRequest
     public ResponseEntity<ApiResponse<OrderResponseDTO>> saveNewOrder(@Valid @RequestBody OrderRequestDTO orderRequestDTO, @PathVariable Long companyId) {
         Order savedOrder = orderService.saveNewOrder(orderRequestDTO, companyId);
-        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new OrderResponseDTO(savedOrder)));
-    }
-
-    @PostMapping("/saveWithEmployee/{orderId}/{employeeId}")
-    @ValidateOrderRequest
-    public ResponseEntity<ApiResponse<OrderResponseDTO>> saveOrderWithEmployee(@Valid @RequestBody OrderRequestDTO orderRequestDTO, @PathVariable Long orderId, @PathVariable Long employeeId) {
-        Order savedOrder = orderService.saveOrder(orderRequestDTO, orderId, employeeId);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), new OrderResponseDTO(savedOrder)));
     }
 

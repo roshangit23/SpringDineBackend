@@ -22,7 +22,6 @@ public class BillResponseDTO {
     private Long tableId;
     private LocalDateTime billCreatedTime;
     private Long customerId;
-    private String customerName; // Assuming the Customer class has a name attribute
     private Long discountId;
     private Set<RestaurantSection.RestaurantType> restaurantType;
     // Constructor

@@ -11,12 +11,12 @@ import java.util.List;
 @Repository
 public interface FoodItemInventoryRepository extends JpaRepository<FoodItemInventory, Long> {
 
-    @Query("SELECT fi.inventory, SUM(fio.quantity * fi.requiredQuantity) as usage " +
+    @Query("SELECT fii.inventory, SUM(fio.quantity * fii.requiredQuantity) as usage " +
             "FROM FoodItemOrder fio " +
-            "JOIN fio.foodItem.requiredInventoryItems fi " +
-            "WHERE fio.start_time BETWEEN :startDate AND :endDate " +
+            "JOIN fio.foodItem.requiredInventoryItems fii " +
+            "WHERE fio.place_time BETWEEN :startDate AND :endDate " +
             "AND fio.company.id = :companyId " +
-            "GROUP BY fi.inventory " +
+            "GROUP BY fii.inventory " +
             "ORDER BY usage DESC")
     List<Object[]> findMostUsedIngredients(
             @Param("startDate") LocalDateTime startDate,
@@ -24,12 +24,12 @@ public interface FoodItemInventoryRepository extends JpaRepository<FoodItemInven
             @Param("companyId") Long companyId
     );
 
-    @Query("SELECT fi.inventory, SUM(fio.quantity * fi.requiredQuantity) as usage " +
+    @Query("SELECT fii.inventory, SUM(fio.quantity * fii.requiredQuantity) as usage " +
             "FROM FoodItemOrder fio " +
-            "JOIN fio.foodItem.requiredInventoryItems fi " +
-            "WHERE fio.start_time BETWEEN :startDate AND :endDate " +
+            "JOIN fio.foodItem.requiredInventoryItems fii " +
+            "WHERE fio.place_time BETWEEN :startDate AND :endDate " +
             "AND fio.company.id = :companyId " +
-            "GROUP BY fi.inventory " +
+            "GROUP BY fii.inventory " +
             "ORDER BY usage ASC")
     List<Object[]> findLeastUsedIngredients(
             @Param("startDate") LocalDateTime startDate,

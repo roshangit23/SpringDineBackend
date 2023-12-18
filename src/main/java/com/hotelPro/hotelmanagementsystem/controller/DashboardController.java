@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/dashboard")
@@ -23,14 +24,11 @@ public class DashboardController {
  //Sales and Revenue Analytics:
     @GetMapping("/revenue/{companyId}")
     public ResponseEntity<ApiResponse<String>> getRevenue(  @PathVariable Long companyId, @RequestParam String period) {
-        try {
             Double revenue = dashboardService.calculateRevenue(companyId, period);
+            if (revenue == null) {
+                revenue = 0.0;
+            }
             return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Revenue calculated successfully: " + revenue));
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), e.getMessage()), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An error occurred while calculating revenue"), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 
     @GetMapping("/aov/{companyId}")
@@ -51,6 +49,9 @@ public class DashboardController {
             @RequestParam Order.OrderType orderType,
             @RequestParam String period) {
         Double revenue = dashboardService.calculateRevenueByOrderType(companyId, period, orderType);
+        if (revenue == null) {
+            revenue = 0.0;
+        }
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Revenue calculated successfully: " + revenue));
     }
     @GetMapping("/due-amount/{companyId}")
@@ -115,18 +116,24 @@ public class DashboardController {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), peakDays));
     }
     @GetMapping("/deleted-orders/{companyId}")
-    public ResponseEntity<ApiResponse<List<OrderAudit>>> getDeletedOrders(
+    public ResponseEntity<ApiResponse<List<OrderAuditResponseDTO>>> getDeletedOrders(
             @PathVariable Long companyId,
             @RequestParam String period) {
         List<OrderAudit> deletedOrders = dashboardService.getDeletedOrders(companyId, period);
-        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), deletedOrders));
+        List<OrderAuditResponseDTO> orderAuditDTOs = deletedOrders.stream()
+                .map(OrderAuditResponseDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), orderAuditDTOs));
     }
     @GetMapping("/deleted-bills/{companyId}")
-    public ResponseEntity<ApiResponse<List<BillAudit>>> getDeletedBills(
+    public ResponseEntity<ApiResponse<List<BillAuditResponseDTO>>> getDeletedBills(
             @PathVariable Long companyId,
             @RequestParam String period) {
         List<BillAudit> deletedBills = dashboardService.getDeletedBills(companyId, period);
-        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), deletedBills));
+        List<BillAuditResponseDTO> billAuditDTOs = deletedBills.stream()
+                .map(BillAuditResponseDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), billAuditDTOs));
     }
 
     @GetMapping("/top-selling-items/{companyId}")
@@ -154,7 +161,7 @@ public class DashboardController {
         List<FoodItemOrderRepository.LeastSellingItemProjection> leastSellingItems = dashboardService.getLeastSellingItems(companyId, startDate, endDate);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), leastSellingItems));
     }
-    @GetMapping("/frequently-ordered-items/{companyId}")
+    @GetMapping("/frequently-ordered-item-pairs/{companyId}")
     public ResponseEntity<ApiResponse<List<FoodItemOrderRepository.ItemPairFrequency>>> getFrequentlyOrderedItemPairs(
             @PathVariable Long companyId,
             @RequestParam String period
@@ -163,7 +170,7 @@ public class DashboardController {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), frequentlyOrderedItemPairs));
     }
 
-    @GetMapping("/most-used/{companyId}")
+    @GetMapping("/most-used-discount-codes/{companyId}")
     public ResponseEntity<ApiResponse<List<DiscountUsageDTO>>> getMostUsedDiscountCodes(
             @PathVariable Long companyId,
             @RequestParam String period
@@ -172,36 +179,48 @@ public class DashboardController {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), data));
     }
 
-    @GetMapping("/filter-orders/{companyId}")
-    public ResponseEntity<ApiResponse<List<Order>>> filterOrdersByTimeTaken(
+    @GetMapping("/filter-orders-byTimeTaken/{companyId}")
+    public ResponseEntity<ApiResponse<List<OrderResponseDTO>>> filterOrdersByTimeTaken(
             @PathVariable Long companyId,
             @RequestParam String timeTaken,
             @RequestParam String period) {
         List<Order> orders = dashboardService.filterOrdersByTimeTaken(companyId, timeTaken, period);
-        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), orders));
+        List<OrderResponseDTO> orderDTOs = orders.stream()
+                .map(OrderResponseDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), orderDTOs));
     }
-    @GetMapping("/filter-food-item-order-details/{companyId}")
-    public ResponseEntity<ApiResponse<List<FoodItemOrderDetail>>> filterFoodItemOrderDetailsByTimeTaken(
+    @GetMapping("/filter-food-item-order-details-byTimeTaken/{companyId}")
+    public ResponseEntity<ApiResponse<List<FoodItemOrderDetailResponseDTO>>> filterFoodItemOrderDetailsByTimeTaken(
             @PathVariable Long companyId,
             @RequestParam String timeTaken,
             @RequestParam String period) {
         List<FoodItemOrderDetail> details = dashboardService.filterFoodItemOrderDetailsByTimeTaken(companyId, timeTaken, period);
-        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), details));
+        List<FoodItemOrderDetailResponseDTO> detailDTOs  = details.stream()
+                .map(FoodItemOrderDetailResponseDTO::new)
+                .toList();
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), detailDTOs));
     }
 
     @GetMapping("/last-10-orders/{companyId}")
-    public ResponseEntity<ApiResponse<List<Order>>> getLast10Orders(
+    public ResponseEntity<ApiResponse<List<OrderResponseDTO>>> getLast10Orders(
             @PathVariable Long companyId
     ) {
         List<Order> last10Orders = dashboardService.getLast10Orders(companyId);
-        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), last10Orders));
+        List<OrderResponseDTO> orderDTOs = last10Orders.stream()
+                .map(OrderResponseDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), orderDTOs));
     }
     @GetMapping("/last-10-bills/{companyId}")
-    public ResponseEntity<ApiResponse<List<Bill>>> getLast10Bills(
+    public ResponseEntity<ApiResponse<List<BillResponseDTO>>> getLast10Bills(
             @PathVariable Long companyId
     ) {
         List<Bill> last10Bills = dashboardService.getLast10Bills(companyId);
-        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), last10Bills));
+        List<BillResponseDTO> billDTOs = last10Bills.stream()
+                .map(BillResponseDTO::new)
+                .toList();
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), billDTOs));
     }
     @GetMapping("/employee-performance/{companyId}")
     public ResponseEntity<ApiResponse<List<EmployeePerformanceDTO>>> getEmployeePerformance(

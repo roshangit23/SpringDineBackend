@@ -130,21 +130,6 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         table.setStatus(RestaurantTable.TableStatus.COMPLETED);
         return restaurantTableRepository.save(table);
     }
-//    @Override
-//    @Transactional
-//    public RestaurantTable freeTable(Long tableId) {
-//        RestaurantTable table = getTableById(tableId);
-//        Order currentOrder = table.getCurrentOrder();
-//        if ((!table.getBills().stream().allMatch(bill -> bill.getStatus() == Bill.BillStatus.SETTLED || bill.getStatus() == Bill.BillStatus.NOT_SETTLED))
-//            || (currentOrder == null || (currentOrder.getStatus() != Order.Status.MERGED && currentOrder.getStatus() != Order.Status.REMOVED_WITHOUT_CREATING
-//        && currentOrder.getStatus() != Order.Status.COMPLETED))) {
-//            throw new CustomException("Table can only be freed when all bills are SETTLED or NOT_SETTLED, and the current order is in an appropriate state.", HttpStatus.BAD_REQUEST);
-//        }
-//        currentOrder.setEndTime(LocalDateTime.now());
-//        table.setStatus(RestaurantTable.TableStatus.FREE);
-//        table.setCurrentOrder(null); // Clear the current order when freeing the table
-//        return restaurantTableRepository.save(table);
-//    }
 @Override
 @Transactional
 public RestaurantTable freeTable(Long tableId) {
@@ -204,11 +189,6 @@ public RestaurantTable freeTable(Long tableId) {
         return restaurantTableRepository.save(restaurantTable);
     }
 
-//    @Override
-//    public RestaurantTable getTableByOrderId(Long id) {
-////        return restaurantTableRepository.findByCurrentOrder(id)
-////                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
-//    }
 @Override
 @Transactional
 public double mergeOrders(List<Long> tableIds) {

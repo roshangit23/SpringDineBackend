@@ -12,7 +12,7 @@ import java.util.Set;
 
 public interface OrderService {
     Order saveNewOrder(OrderRequestDTO orderRequestDTO, Long companyId);
-    Order saveOrder(OrderRequestDTO orderRequestDTO,  Long orderId,Long employeeId);
+    Order saveOrder(OrderRequestDTO orderRequestDTO,  Long orderId);
     Order getOrderById(Long id);
     List<Order> getAllOrders(Long companyId);
     void deleteOrder(Long id, String comments);
@@ -24,23 +24,18 @@ public interface OrderService {
     Order updateFoodItemOrderComment(Long orderId, Long foodItemId, String comment);
     Order updateOrderStatus(Long orderId, String status);
     public double calculateDiscount(Order order, Discount discount);
-
     List<Order> getOrdersByStatus(Long companyId, Order.Status status);
-
     List<Order> getOrdersByType(Long companyId, Order.OrderType orderType);
-
     Set<FoodItemOrder> getAllFoodItemOrdersByOrderId(Long orderId);
     FoodItemOrder getFoodItemOrderById(Long foodItemOrderId);
     Set<FoodItemOrder> getAllFoodItemOrdersByCompanyId(Long companyId);
     Set<FoodItemOrder> getFoodItemOrdersByStatusAndCompanyId(Long companyId,FoodItemOrder.Status status);
     FoodItemOrder updateFoodItemOrderStatus(Long orderId, Long foodItemId, Long foodItemOrderDetailId, FoodItemOrder.Status status);
     Duration getTimeTakenForFoodItemOrder(Long orderId, Long foodItemId);
-
     Set<FoodItemOrderDetail> getAllFoodItemOrderDetailsByCompanyId(Long companyId);
     Set<FoodItemOrderDetail> getAllFoodItemOrderDetailsByOrderId(Long orderId);
     Set<FoodItemOrderDetail> getFoodItemOrderDetailsByStatusAndCompanyId(Long companyId, FoodItemOrder.Status status);
     Duration getTimeTakenForFoodItemOrderDetail(Long orderId, Long foodItemId, Long foodItemOrderDetailId);
     FoodItemOrderDetail getFoodItemOrderDetailById(Long foodItemOrderDetailId);
-
     Order findByOrderNoAndCompanyId(Long orderNo, Long companyId);
 }
