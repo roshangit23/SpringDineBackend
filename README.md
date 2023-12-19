@@ -194,4 +194,5 @@ SubscriptionController
 /subscriptions/getSubscriptionDetails/{companyId}: Get subscription details.
 
 Conclusion
+
 This Spring Boot project offers a robust backend solution for restaurant management systems, integrating various functionalities essential for efficient operations. Its modular approach and comprehensive API coverage make it a versatile and scalable solution for different restaurant management needs.
